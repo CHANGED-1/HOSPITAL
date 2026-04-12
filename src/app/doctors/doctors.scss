@@ -1,0 +1,94 @@
+:host {
+  display: block;
+  background: white;
+  border-radius: 1rem;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12);
+  overflow: hidden;
+}
+
+.page {
+  padding: 2rem;
+}
+
+.page-header {
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.page-header h1 {
+  margin: 0 0 0.5rem;
+  color: #0d3b66;
+  font-size: 2rem;
+}
+
+.page-header p {
+  margin: 0;
+  color: #666;
+  font-size: 1.1rem;
+}
+
+.table-wrap {
+  overflow-x: auto;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0;
+}
+
+.data-table th,
+.data-table td {
+  padding: 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid #eee;
+}
+
+.data-table th {
+  background: #f8f9fa;
+  font-weight: 600;
+  color: #0d3b66;
+}
+
+.data-table tbody tr:hover {
+  background: rgba(34, 102, 255, 0.08);
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.25rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.badge--success {
+  background: rgba(53, 181, 123, 0.18);
+  color: #1f6b3d;
+}
+
+.badge--warning {
+  background: rgba(255, 163, 0, 0.18);
+  color: #7c5200;
+}
+
+.btn-edit {
+  padding: 0.4rem 0.85rem;
+  border: 1px solid rgba(13, 59, 102, 0.25);
+  border-radius: 0.75rem;
+  background: white;
+  color: #0d3b66;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.2s ease, background 0.2s ease;
+}
+
+.btn-edit:hover {
+  background: rgba(34, 102, 255, 0.12);
+  transform: translateY(-1px);
+}

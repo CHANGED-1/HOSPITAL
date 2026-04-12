@@ -1,0 +1,60 @@
+<section class="page">
+  <header class="page-header">
+    <h1>Doctors</h1>
+    <p>Manage doctor availability, assignments and schedules.</p>
+  </header>
+
+  <div class="page-actions">
+    <button class="btn-primary" type="button" (click)="viewPatients()">View & Edit Patients</button>
+  </div>
+
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Name</th>
+          <th>Specialty</th>
+          <th>Availability</th>
+          <th>Status</th>
+          <th>Assigned Patients</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let doctor of doctors">
+          <td>{{ doctor.id }}</td>
+
+          <td *ngIf="!doctor.editing">{{ doctor.username }}</td>
+          <td *ngIf="doctor.editing"><input type="text" [(ngModel)]="doctor.username" /></td>
+
+          <td *ngIf="!doctor.editing">{{ doctor.specialty }}</td>
+          <td *ngIf="doctor.editing"><input type="text" [(ngModel)]="doctor.specialty" /></td>
+
+          <td *ngIf="!doctor.editing">{{ doctor.availability }}</td>
+          <td *ngIf="doctor.editing"><input type="text" [(ngModel)]="doctor.availability" /></td>
+
+          <td *ngIf="!doctor.editing">
+            <span class="badge" [ngClass]="{ 'badge--success': doctor.doctorStatus === 'Available', 'badge--warning': doctor.doctorStatus !== 'Available' }">
+              {{ doctor.doctorStatus }}
+            </span>
+          </td>
+          <td *ngIf="doctor.editing">
+            <select [(ngModel)]="doctor.doctorStatus">
+              <option value="Available">Available</option>
+              <option value="On Leave">On Leave</option>
+              <option value="Unavailable">Unavailable</option>
+            </select>
+          </td>
+          <td>{{ getAssignedCount(doctor.id) }}</td>
+
+          <td>
+            <button *ngIf="!doctor.editing" class="btn-edit" type="button" (click)="editDoctor(doctor)">Edit</button>
+            <button *ngIf="doctor.editing" class="btn-edit" type="button" (click)="saveDoctor(doctor)">Save</button>
+            <button *ngIf="doctor.editing" class="btn-edit" type="button" (click)="cancelEdit(doctor)">Cancel</button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>

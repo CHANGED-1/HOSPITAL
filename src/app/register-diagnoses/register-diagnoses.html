@@ -1,0 +1,180 @@
+<section class="page">
+  <header class="page-header">
+    <h1>Register Diagnoses</h1>
+    <p>Manage and track patient diagnoses with import/export capabilities.</p>
+  </header>
+
+  <!-- Add New Diagnosis Form -->
+  <section class="form-section">
+    <h2>Add New Diagnosis</h2>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Code <span class="required">*</span></label>
+        <input type="text" [(ngModel)]="newDiagnosis.code" placeholder="e.g., A00.0" />
+      </div>
+      <div class="form-group">
+        <label>Name <span class="required">*</span></label>
+        <input type="text" [(ngModel)]="newDiagnosis.name" placeholder="e.g., Cholera due to V. cholerae O:1" />
+      </div>
+      <div class="form-group">
+        <label>Description</label>
+        <input type="text" [(ngModel)]="newDiagnosis.description" placeholder="Additional details..." />
+      </div>
+      <div class="form-group">
+        <label>Type</label>
+        <select [(ngModel)]="newDiagnosis.type">
+          <option *ngFor="let t of typeOptions" [value]="t">{{ t }}</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Category</label>
+        <select [(ngModel)]="newDiagnosis.category">
+          <option value="">-- Select Category --</option>
+          <option *ngFor="let c of categoryOptions" [value]="c">{{ c }}</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Status</label>
+        <select [(ngModel)]="newDiagnosis.status">
+          <option *ngFor="let s of statusOptions" [value]="s">{{ s }}</option>
+        </select>
+      </div>
+      <button class="btn-add" type="button" (click)="addDiagnosis()">Add Diagnosis</button>
+    </div>
+  </section>
+
+  <!-- Import/Export Section -->
+  <section class="import-export-section">
+    <h2>Import / Export</h2>
+    <div class="file-upload-group">
+      <input
+        type="file"
+        #fileInput
+        accept=".csv,.xlsx,.xls"
+        (change)="onFileSelected($event)"
+        style="display: none"
+      />
+      <button type="button" (click)="fileInput.click()" class="btn-upload">Choose File</button>
+      <span *ngIf="pendingUploadName" class="filename">{{ pendingUploadName }}</span>
+      <button
+        *ngIf="pendingUploadFile"
+        type="button"
+        (click)="openUploadedFile()"
+        class="btn-import"
+      >
+        Import File
+      </button>
+      <button type="button" (click)="exportToExcel()" class="btn-export">Export to Excel</button>
+      <button type="button" (click)="manualSave()" class="btn-save">Save All</button>
+    </div>
+  </section>
+
+  <!-- Search and Filter Section -->
+  <section class="search-section">
+    <h2>Search & Filter</h2>
+    <div class="filter-row">
+      <div class="filter-group">
+        <label>Search</label>
+        <input type="text" [(ngModel)]="searchTerm" placeholder="Search by code, name, or description..." />
+      </div>
+      <div class="filter-group">
+        <label>Type</label>
+        <select [(ngModel)]="filterType">
+          <option value="">-- All Types --</option>
+          <option *ngFor="let t of typeOptions" [value]="t">{{ t }}</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label>Category</label>
+        <select [(ngModel)]="filterCategory">
+          <option value="">-- All Categories --</option>
+          <option *ngFor="let c of categoryOptions" [value]="c">{{ c }}</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label>Status</label>
+        <select [(ngModel)]="filterStatus">
+          <option value="">-- All Status --</option>
+          <option *ngFor="let s of statusOptions" [value]="s">{{ s }}</option>
+        </select>
+      </div>
+      <button type="button" (click)="clearSearch()" class="btn-clear">Clear</button>
+    </div>
+    <div class="results-info">
+      <p>Showing {{ paginatedDiagnoses.length }} of {{ filteredDiagnoses.length }} diagnoses</p>
+    </div>
+  </section>
+
+  <!-- Diagnoses Table -->
+  <section class="table-section">
+    <h2>Diagnoses Register ({{ diagnoses.length }} total)</h2>
+    <div class="table-wrap">
+      <table class="diagnoses-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Code</th>
+            <th>Name</th>
+            <th>Description</th>
+            <th>Type</th>
+            <th>Category</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let diagnosis of paginatedDiagnoses; let i = index">
+            <td>{{ (currentPage - 1) * itemsPerPage + i + 1 }}</td>
+            <td>{{ diagnosis.code }}</td>
+            <td>{{ diagnosis.name }}</td>
+            <td>{{ diagnosis.description }}</td>
+            <td>
+              <span class="badge" [ngClass]="'badge-' + diagnosis.type.toLowerCase()">
+                {{ diagnosis.type }}
+              </span>
+            </td>
+            <td>{{ diagnosis.category }}</td>
+            <td>
+              <span class="badge" [ngClass]="diagnosis.status === 'Active' ? 'badge-active' : 'badge-inactive'">
+                {{ diagnosis.status }}
+              </span>
+            </td>
+            <td>
+              <button type="button" (click)="deleteDiagnosis(i)" class="btn-delete" title="Delete">Delete</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div *ngIf="paginatedDiagnoses.length === 0" class="no-data">
+        <p>No diagnoses found. Add a new diagnosis or import from a file.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Pagination -->
+  <section class="pagination-section" *ngIf="totalPages > 1">
+    <button
+      type="button"
+      (click)="prevPage()"
+      [disabled]="currentPage === 1"
+      class="btn-page"
+    >
+      Previous
+    </button>
+    <span class="page-info">Page {{ currentPage }} of {{ totalPages }}</span>
+    <button
+      type="button"
+      (click)="nextPage()"
+      [disabled]="currentPage >= totalPages"
+      class="btn-page"
+    >
+      Next
+    </button>
+    <select [(ngModel)]="itemsPerPage">
+      <option value="10">10 per page</option>
+      <option value="20">20 per page</option>
+      <option value="50">50 per page</option>
+    </select>
+  </section>
+</section>

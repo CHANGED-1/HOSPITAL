@@ -1,0 +1,57 @@
+<main class="backup-page">
+  <h1>System Backup & Restore</h1>
+
+  <section class="backup-card">
+    <h2>Create Backup</h2>
+    <p>Export all system data including patients, doctors, services, reports, and more into a compressed backup file.</p>
+
+    <div class="backup-actions">
+      <button 
+        class="btn-backup" 
+        type="button" 
+        (click)="createBackup()"
+        [disabled]="isCreatingBackup">
+        {{ isCreatingBackup ? 'Creating Backup...' : '📥 Create Backup' }}
+      </button>
+    </div>
+
+    <div *ngIf="backupMessage" class="message success">{{ backupMessage }}</div>
+    <div *ngIf="backupError" class="message error">{{ backupError }}</div>
+  </section>
+
+  <section class="restore-card">
+    <h2>Restore Backup</h2>
+    <p>Import data from a previously created backup file. This will restore all system data.</p>
+
+    <label class="restore-upload">
+      🔄 Choose Backup File
+      <input #restoreInput type="file" accept=".json" (change)="restoreBackup($event)" />
+    </label>
+  </section>
+
+  <section class="history-card">
+    <h2>Backup History</h2>
+    <p>View and manage previously created backups.</p>
+
+    <div *ngIf="backups.length > 0; else noBackups" class="backup-list">
+      <div class="backup-item" *ngFor="let backup of backups; let i = index">
+        <div class="backup-info">
+          <span class="backup-date">{{ backup.timestamp | date: 'MMM dd, yyyy HH:mm:ss' }}</span>
+          <span class="backup-size">{{ backup.size }}</span>
+          <span class="backup-status" [class]="backup.status">{{ backup.status }}</span>
+        </div>
+        <button 
+          class="btn-delete" 
+          type="button" 
+          (click)="deleteBackupRecord(i)"
+          title="Delete this record">
+          ✕
+        </button>
+      </div>
+    </div>
+
+    <ng-template #noBackups>
+      <p class="empty-message">No backups created yet.</p>
+    </ng-template>
+  </section>
+</main>

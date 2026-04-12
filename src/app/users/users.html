@@ -1,0 +1,232 @@
+<div class="users-container">
+  <div class="users-header">
+    <h2>System User Management</h2>
+    <p>Total Users: {{ filteredUsers.length }} / {{ users.length }}</p>
+    <div class="header-actions" *ngIf="auth.isLoggedIn()">
+      <button class="btn btn-secondary" (click)="exportUsers()">Export Users</button>
+      <label class="btn btn-secondary import-btn">
+        Import Users
+        <input type="file" accept=".json" (change)="importUsers($event)" style="display: none;" />
+      </label>
+    </div>
+  </div>
+
+  <!-- Add New User Form -->
+  <div class="add-user-section" *ngIf="auth.isLoggedIn()">
+    <h3>Add New User Account</h3>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Name:</label>
+        <input type="text" [(ngModel)]="newUser.name" placeholder="Enter full name" />
+      </div>
+
+      <div class="form-group">
+        <label>Username:</label>
+        <input type="text" [(ngModel)]="newUser.username" placeholder="Enter username" />
+      </div>
+
+      <div class="form-group">
+        <label>Password:</label>
+        <input type="password" [(ngModel)]="newUser.password" placeholder="Enter password" />
+      </div>
+
+      <div class="form-group">
+        <label>Email:</label>
+        <input type="email" [(ngModel)]="newUser.email" placeholder="Enter email" />
+      </div>
+
+      <div class="form-group">
+        <label>Phone:</label>
+        <input type="tel" [(ngModel)]="newUser.phone" placeholder="Enter phone number" />
+      </div>
+
+      <div class="form-group">
+        <label>Role:</label>
+        <select [(ngModel)]="newUser.role">
+          <option *ngFor="let r of roles" [value]="r">{{ r | uppercase }}</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Department:</label>
+        <select [(ngModel)]="newUser.department">
+          <option value="">-- Select Department --</option>
+          <option *ngFor="let d of departments" [value]="d">{{ d }}</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Status:</label>
+        <select [(ngModel)]="newUser.status">
+          <option value="active">Active</option>
+          <option value="inactive">Inactive</option>
+        </select>
+      </div>
+    </div>
+
+    <button class="btn btn-primary" (click)="addUser()">Add User</button>
+  </div>
+
+  <!-- Filters Section -->
+  <div class="filters-section">
+    <div class="filter-group">
+      <label>Search:</label>
+      <input
+        type="text"
+        [(ngModel)]="searchText"
+        placeholder="Search by username, email, or phone..."
+        class="search-input"
+      />
+    </div>
+
+    <div class="filter-group">
+      <label>Filter by Role:</label>
+      <select [(ngModel)]="filterRole">
+        <option value="">-- All Roles --</option>
+        <option *ngFor="let r of roles" [value]="r">{{ r | uppercase }}</option>
+      </select>
+    </div>
+
+    <div class="filter-group">
+      <label>Status:</label>
+      <select [(ngModel)]="filterStatus">
+        <option value="all">All</option>
+        <option value="active">Active</option>
+        <option value="inactive">Inactive</option>
+      </select>
+    </div>
+
+    <button class="btn btn-secondary" (click)="currentPage = 1; searchText = ''; filterRole = ''; filterStatus = 'all'">
+      Clear Filters
+    </button>
+  </div>
+
+  <!-- Users Table -->
+  <div class="users-table-wrapper">
+    <table class="users-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Name</th>
+          <th>Username</th>
+          <th>Email</th>
+          <th>Phone</th>
+          <th>Role</th>
+          <th>Department</th>
+          <th>Status</th>
+          <th>Created Date</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let user of paginatedUsers; let i = index" [class.editing]="user.editing">
+          <!-- Display Row -->
+          <td *ngIf="!user.editing">{{ user.id }}</td>
+          <td *ngIf="!user.editing">{{ user.name }}</td>
+          <td *ngIf="!user.editing">{{ user.username }}</td>
+          <td *ngIf="!user.editing">{{ user.email }}</td>
+          <td *ngIf="!user.editing">{{ user.phone }}</td>
+          <td *ngIf="!user.editing">
+            <span class="role-badge" [style.background-color]="getRoleColor(user.role)">{{ user.role }}</span>
+          </td>
+          <td *ngIf="!user.editing">{{ user.department }}</td>
+          <td *ngIf="!user.editing">
+            <span class="status-badge" [ngClass]="getStatusClass(user.status)">{{ user.status }}</span>
+          </td>
+          <td *ngIf="!user.editing">{{ user.createdDate }}</td>
+          <td *ngIf="!user.editing" class="actions">
+            <button
+              class="btn btn-sm btn-edit"
+              (click)="editUser(user)"
+              *ngIf="auth.isLoggedIn()"
+              title="Edit"
+            >
+              Edit
+            </button>
+            <button
+              class="btn btn-sm"
+              [ngClass]="user.status === 'active' ? 'btn-deactivate' : 'btn-activate'"
+              (click)="toggleStatus(user)"
+              *ngIf="auth.isLoggedIn()"
+              [title]="user.status === 'active' ? 'Deactivate' : 'Activate'"
+            >
+              {{ user.status === 'active' ? 'Deactivate' : 'Activate' }}
+            </button>
+            <button
+              class="btn btn-sm btn-delete"
+              (click)="deleteUser(filteredUsers.indexOf(user))"
+              *ngIf="auth.isLoggedIn()"
+              title="Delete"
+            >
+              Delete
+            </button>
+          </td>
+
+          <!-- Edit Row -->
+          <td *ngIf="user.editing" colspan="9" class="edit-cell">
+            <div class="edit-form">
+              <div class="form-row">
+                <div class="form-field">
+                  <label>Name:</label>
+                  <input type="text" [(ngModel)]="user.name" />
+                </div>
+                <div class="form-field">
+                  <label>Username:</label>
+                  <input type="text" [(ngModel)]="user.username" />
+                </div>
+                <div class="form-field">
+                  <label>Password:</label>
+                  <input type="password" [(ngModel)]="user.password" />
+                </div>
+                <div class="form-field">
+                  <label>Email:</label>
+                  <input type="email" [(ngModel)]="user.email" />
+                </div>
+                <div class="form-field">
+                  <label>Phone:</label>
+                  <input type="tel" [(ngModel)]="user.phone" />
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-field">
+                  <label>Role:</label>
+                  <select [(ngModel)]="user.role">
+                    <option *ngFor="let r of roles" [value]="r">{{ r | uppercase }}</option>
+                  </select>
+                </div>
+                <div class="form-field">
+                  <label>Department:</label>
+                  <select [(ngModel)]="user.department">
+                    <option value="">-- Select --</option>
+                    <option *ngFor="let d of departments" [value]="d">{{ d }}</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="edit-buttons">
+                <button class="btn btn-primary" (click)="saveUser(user)">Save</button>
+                <button class="btn btn-secondary" (click)="cancelEdit(user)">Cancel</button>
+              </div>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- No Data Message -->
+    <div class="no-data" *ngIf="paginatedUsers.length === 0">
+      <p>No users found matching your filters.</p>
+    </div>
+  </div>
+
+  <!-- Pagination Controls -->
+  <div class="pagination-controls">
+    <button class="btn btn-secondary" (click)="prevPage()" [disabled]="currentPage === 1">Previous</button>
+    <span class="page-info">Page {{ currentPage }} of {{ totalPages || 1 }}</span>
+    <button class="btn btn-secondary" (click)="nextPage()" [disabled]="currentPage >= totalPages">Next</button>
+    <select [(ngModel)]="pageSize">
+      <option *ngFor="let size of pageSizeOptions" [value]="size">Show {{ size }}</option>
+    </select>
+  </div>
+</div>

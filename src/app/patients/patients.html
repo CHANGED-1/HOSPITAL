@@ -1,0 +1,94 @@
+<section class="page">
+  <header class="page-header">
+    <h1>Patients</h1>
+    <p>List of all registered patients in the system.</p>
+    <div class="search-row">
+      <input type="search" [(ngModel)]="searchText" placeholder="Search by patient name, ID, or diagnosis" />
+      <span class="search-hint">Patients from OPD & IPD records</span>
+    </div>
+  </header>
+
+  <!-- Patient Records from OPD and IPD -->
+  <section class="patient-records-section">
+    <header class="section-header">
+      <h2>Patient Visits & Admissions (OPD & IPD)</h2>
+      <p>Combined list of OPD visits and IPD admissions.</p>
+    </header>
+
+    <div class="filters-bar">
+      <input
+        type="search"
+        [(ngModel)]="searchText"
+        placeholder="Search by patient name, ID, diagnosis..."
+        class="search-input"
+      />
+      <input
+        type="date"
+        [(ngModel)]="filterDate"
+        placeholder="Filter by date"
+        class="date-filter"
+      />
+      <button (click)="refreshPatientRecords()" class="btn-refresh">🔄 Refresh</button>
+    </div>
+
+    <div class="records-info">
+      <span>Showing {{ paginatedRecords.length }} of {{ filteredPatientRecords.length }} records</span>
+    </div>
+
+    <div class="table-wrap">
+      <table class="records-table">
+        <thead>
+          <tr>
+            <th>No</th>
+            <th>Date</th>
+            <th>Time</th>
+            <th>Reg No</th>
+            <th>ID Number</th>
+            <th>Names</th>
+            <th>Age</th>
+            <th>Sex</th>
+            <th>Village</th>
+            <th>Kgs</th>
+            <th>Attendance</th>
+            <th>Diagnosis</th>
+            <th>Treatment</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let record of paginatedRecords" [class.opd-row]="record.source === 'OPD'" [class.ipd-row]="record.source === 'IPD'">
+            <td>{{ record.rowNo }}</td>
+            <td>{{ record.date }}</td>
+            <td>{{ record.time }}</td>
+            <td>{{ record.regNo }}</td>
+            <td>{{ record.idNumber }}</td>
+            <td class="names-cell">{{ record.names }}</td>
+            <td>{{ record.age || '-' }}</td>
+            <td>{{ record.sex }}</td>
+            <td>{{ record.village }}</td>
+            <td>{{ record.kgs || '-' }}</td>
+            <td class="attendance-cell">
+              <span [class.opd-badge]="record.source === 'OPD'" [class.ipd-badge]="record.source === 'IPD'">
+                {{ record.attendance }}
+              </span>
+            </td>
+            <td>{{ record.diagnosis }}</td>
+            <td>{{ record.treatment }}</td>
+          </tr>
+          <tr *ngIf="paginatedRecords.length === 0">
+            <td colspan="13" class="no-data">No patient records found.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    <div class="pagination-controls">
+      <button (click)="prevRecordPage()" [disabled]="currentPage === 1" class="btn-nav">← Previous</button>
+      <span class="page-info">Page {{ currentPage }} of {{ totalRecordPages || 1 }}</span>
+      <button (click)="nextRecordPage()" [disabled]="currentPage >= totalRecordPages" class="btn-nav">Next →</button>
+      <select [(ngModel)]="pageSize" (change)="currentPage = 1" class="page-size-select">
+        <option *ngFor="let size of pageSizeOptions" [value]="size">{{ size }} per page</option>
+      </select>
+    </div>
+  </section>
+</section>

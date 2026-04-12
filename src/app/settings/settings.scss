@@ -1,0 +1,57 @@
+.settings-page {
+  max-width: 840px;
+  margin: 1rem auto 2rem;
+  padding: 1rem;
+  color: #fff;
+
+  h1 {
+    font-size: 1.8rem;
+    margin-bottom: 1rem;
+  }
+}
+
+.settings-card {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 0.9rem;
+  padding: 1.3rem;
+  display: grid;
+  gap: 1rem;
+}
+
+.logo-preview {
+  width: 86px;
+  height: 86px;
+  min-width: 86px;
+  min-height: 86px;
+  border-radius: 0.6rem;
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 0.65rem;
+}
+
+.logo-preview img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.logo-upload {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  color: inherit;
+  background: rgba(255,255,255,0.15);
+  border: 1px solid rgba(255,255,255,0.25);
+  border-radius: 0.35rem;
+  padding: 0.35rem 0.6rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+.logo-upload input {
+  display: none;
+}

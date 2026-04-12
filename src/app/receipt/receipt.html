@@ -1,0 +1,111 @@
+﻿<div class="receipt-container modern-rec">
+  <header class="receipt-topbar">
+    <div>
+      <h1>🧾 Receipt Entry</h1>
+      <p>Fast patient billing form with modern layout and improved readability.</p>
+    </div>
+    
+  </header>
+
+  <section class="incoming-notifications">
+    <div class="notif-header">
+      <h3>Incoming Patients from Doctors</h3>
+      <button class="btn btn-outline" (click)="viewAllReferrals()">View All Referrals</button>
+    </div>
+    <div *ngIf="newPatients.length === 0" class="notif-empty">No incoming patients from doctors.</div>
+    <div class="notif-list" *ngIf="newPatients.length > 0">
+      <div class="notif-card" *ngFor="let patient of newPatients" (click)="openPatient(patient)">
+        <div class="badge">NEW</div>
+        <div class="info">
+          <div class="name">{{ patient.patientName }} • {{ patient.age }} • {{ patient.source }}</div>
+          <div class="from">From: {{ patient.doctorName }} • {{ patient.status }}</div>
+        </div>
+        <button type="button" (click)="openPatient(patient); $event.stopPropagation()">Open</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="grid-area">
+    <article class="card card-info">
+      <div class="card-header">👤 Patient Info</div>
+      <div class="form-grid">
+        <label>Received From<input type="text" [(ngModel)]="receivedFrom" /></label>
+        <label>Phone<input type="text" [(ngModel)]="phone" /></label>
+        <label>Age<input type="text" [(ngModel)]="age" /></label>
+        <label>Sex<select [(ngModel)]="sex"><option value="">Select</option><option>Male</option><option>Female</option></select></label>
+        <label>Ward<input type="text" [(ngModel)]="ward" /></label>
+        <label>IP Number<input type="text" [(ngModel)]="ipNumber" /></label>
+        <label>ID Number<input type="text" [(ngModel)]="idNumber" /></label>
+        <label>Reg Number<input type="text" [(ngModel)]="regNumber" /></label>
+        <label>Village<input type="text" [(ngModel)]="village" /></label>
+        <label>Served By<input type="text" [(ngModel)]="servedBy" /></label>
+        <label>Credit<input type="text" [(ngModel)]="credit" /></label>
+      </div>
+    </article>
+
+    <article class="card card-payment">
+      <div class="card-header">💳 Payment Info</div>
+      <div class="form-grid">
+        <label>Receipt No<input type="text" [(ngModel)]="receiptNo" /></label>
+        <label>Date<input type="date" [(ngModel)]="receiptDate" /></label>
+        <label>Account Period<input type="text" [(ngModel)]="accPeriod" /></label>
+        <label>Pricelist<input type="text" [(ngModel)]="pricelist" /></label>
+        <label>Payment As<input type="text" [(ngModel)]="receivedAs" /></label>
+        <label>Transaction<input type="text" [(ngModel)]="transaction" /></label>
+        <label>Cheque No<input type="text" [(ngModel)]="chequeNo" /></label>
+        <label>Bookname<input type="text" [(ngModel)]="bookname" /></label>
+        <label>Diagnosis<textarea [(ngModel)]="patientDiagnosis"></textarea></label>
+        <label>Treatments<textarea [value]="patientTreatmentsDisplay" disabled></textarea></label>
+      </div>
+    </article>
+  </section>
+
+  <section class="card card-table">
+    <div class="card-header">🛒 Billing Items</div>
+    <div class="table-wrapper">
+      <table class="receipt-table">
+        <thead>
+          <tr>
+            <th>Qty</th>
+            <th>Description</th>
+            <th>Rate</th>
+            <th>Amount</th>
+            <th>Disc.</th>
+            <th>VAT%</th>
+            <th>VAT</th>
+            <th>Total</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let line of receiptLines; let i = index">
+            <td><input type="number" min="0" [(ngModel)]="line.quantity" (change)="calculateLineAmount(i)" /></td>
+            <td class="desc-col"><input type="text" [(ngModel)]="line.description" (input)="onDescriptionInput(i, $event)" /></td>
+            <td><input type="number" step="0.01" [(ngModel)]="line.rate" (change)="calculateLineAmount(i)" /></td>
+            <td>{{ line.amount | number:'1.2-2' }}</td>
+            <td><input type="number" step="0.01" [(ngModel)]="line.discountedAmount" (change)="calculateLineAmount(i)" /></td>
+            <td><input type="number" min="0" max="100" step="0.01" [(ngModel)]="line.vatRate" (change)="calculateLineAmount(i)" /></td>
+            <td>{{ line.vatPayable | number:'1.2-2' }}</td>
+            <td>{{ line.total | number:'1.2-2' }}</td>
+            <td><button class="btn btn-icon" (click)="removeReceiptLine(i)">🗑</button></td>
+          </tr>
+          <tr *ngIf="receiptLines.length === 0">
+            <td colspan="9" class="empty-row">No items yet. Click + Add Item to add line items.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="summary-row">
+      <div><span>Subtotal</span><strong>{{ totalAmount | number:'1.2-2' }}</strong></div>
+      <div><span>Total VAT</span><strong>{{ totalVAT | number:'1.2-2' }}</strong></div>
+      <div><span>Total Discount</span><strong>{{ totalDiscount | number:'1.2-2' }}</strong></div>
+      <div class="grand"><span>Grand Total</span><strong>{{ receiptTotal | number:'1.2-2' }}</strong></div>
+    </div>
+
+    <div class="actions-row">
+      <button class="btn btn-success" (click)="saveAndPrintReceipt()">💾 Save and Print</button>
+      <button class="btn btn-secondary" (click)="addReceiptLine()">+ Add Line</button>
+    </div>
+  </section>
+</div>

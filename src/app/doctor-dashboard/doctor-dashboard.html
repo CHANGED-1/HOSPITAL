@@ -1,0 +1,275 @@
+<section class="page">
+  <header class="page-header">
+    <h1>Doctor Dashboard</h1>
+    <p>Manage assigned patients, add diagnoses and treatment</p>
+  </header>
+
+  <!-- Doctor Info -->
+  <div class="doctor-info-banner">
+    <div class="info-item">
+      <strong>Doctor:</strong>
+      <span>{{ currentDoctor }}</span>
+    </div>
+    <div class="info-item">
+      <strong>Assigned Patients:</strong>
+      <span class="badge">{{ assignedPatients.length }}</span>
+    </div>
+    <div class="info-item">
+      <strong>Pending:</strong>
+      <span class="badge-warning">{{ assignedPatients.filter((p) => p.status === 'pending').length }}</span>
+    </div>
+    <div class="info-item">
+      <strong>Ready for Payment:</strong>
+      <span class="badge-ready">
+        {{ assignedPatients.filter((p) => p.status === 'ready-for-payment').length }}
+      </span>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="filters-section">
+    <input
+      type="search"
+      [(ngModel)]="searchText"
+      (input)="applyFilters()"
+      placeholder="Search by patient name, ID, or Reg No..."
+      class="search-input"
+    />
+    <select [(ngModel)]="filterStatus" (change)="applyFilters()" class="status-filter">
+      <option value="all">All Status</option>
+      <option value="pending">⏳ Pending</option>
+      <option value="ready-for-payment">💳 Ready for Payment</option>
+      <option value="paid">💰 Paid</option>
+      <option value="completed">✓ Completed</option>
+    </select>
+    <span class="records-count">Showing {{ paginatedPatients.length }} of {{ filteredPatients.length }}</span>
+  </div>
+
+  <!-- Patients Table -->
+  <div class="table-wrap">
+    <table class="patients-table">
+      <thead>
+        <tr>
+          <th>No</th>
+          <th>Date</th>
+          <th>Patient Name</th>
+          <th>Age</th>
+          <th>Sex</th>
+          <th>Reg/ID</th>
+          <th>Type</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let patient of paginatedPatients; let idx = index" class="patient-row">
+          <td>{{ patient.rowNo }}</td>
+          <td>{{ patient.date }}</td>
+          <td class="patient-name">{{ patient.patientName }}</td>
+          <td>{{ patient.age || '-' }}</td>
+          <td>{{ patient.sex || '-' }}</td>
+          <td>{{ patient.regNo || patient.idNumber }}</td>
+          <td>
+            <span [class.opd-badge]="patient.source === 'OPD'" [class.ipd-badge]="patient.source === 'IPD'">
+              {{ patient.source }}
+            </span>
+          </td>
+          <td>
+            <span [class]="'status-badge ' + getStatusBadgeClass(patient.status)">
+              {{ getStatusDisplay(patient.status) }}
+            </span>
+          </td>
+          <td class="actions-cell">
+            <button (click)="toggleExpanded(idx)" class="btn-expand" title="View/Edit details">
+              {{ expandedRowIndex === idx ? '▼' : '▶' }} Details
+            </button>
+          </td>
+        </tr>
+
+        <!-- Expanded Row for Details -->
+        <tr *ngIf="expandedRowIndex >= 0 && paginatedPatients[expandedRowIndex]" class="expanded-row">
+          <td colspan="9" class="expanded-content">
+            <div class="patient-details-panel">
+              <div class="patient-info">
+                <h3>{{ paginatedPatients[expandedRowIndex].patientName }}</h3>
+                <div class="info-grid">
+                  <div class="info-item">
+                    <strong>Location:</strong>
+                    {{ paginatedPatients[expandedRowIndex].village }}
+                  </div>
+                  <div class="info-item">
+                    <strong>Doctor:</strong>
+                    {{ paginatedPatients[expandedRowIndex].doctorName }}
+                  </div>
+                  <div class="info-item">
+                    <strong>Source:</strong>
+                    {{ paginatedPatients[expandedRowIndex].source }}
+                  </div>
+                </div>
+              </div>
+
+              <div class="edit-panel" *ngIf="editingRowIndex === expandedRowIndex">
+                <h4>Update Diagnosis & Treatment</h4>
+                <div class="form-group">
+                  <label>Diagnosis</label>
+                  <div class="search-input-wrapper">
+                    <input
+                      type="text"
+                      [(ngModel)]="diagnosisSearchInput"
+                      (input)="onDiagnosisSearchInput($event.target.value)"
+                      (keydown)="onDiagnosisSearchKeydown($event, paginatedPatients[expandedRowIndex])"
+                      (focus)="showDiagnosisSuggestions = diagnosisSearchInput.length > 0"
+                      (blur)="showDiagnosisSuggestions = false"
+                      placeholder="Type to search diagnosis (e.g., 'cancer', 'fever')..."
+                      class="search-input"
+                    />
+                    <div *ngIf="showDiagnosisSuggestions && filteredDiagnosisOptions.length > 0" class="suggestions-dropdown">
+                      <div
+                        *ngFor="let diagnosis of filteredDiagnosisOptions; let i = index"
+                        (click)="selectDiagnosisFromSearch(paginatedPatients[expandedRowIndex], diagnosis)"
+                        [class.selected]="selectedDiagnosisIndex === i"
+                        class="suggestion-item"
+                      >
+                        {{ diagnosis }}
+                      </div>
+                    </div>
+                  </div>
+                  <small>Type to search • Use <strong>↑↓ arrows</strong> to navigate • Press <strong>Enter</strong> to select • Press <strong>Esc</strong> to close</small>
+                  <div class="multi-chip-list">
+                    <span
+                      class="chip"
+                      *ngFor="let d of paginatedPatients[expandedRowIndex].diagnoses"
+                    >
+                      {{ d }}
+                      <button class="chip-remove" type="button" (click)="removeDiagnosis(paginatedPatients[expandedRowIndex], d)">×</button>
+                    </span>
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label>Treatment</label>
+                  <div class="search-input-wrapper">
+                    <input
+                      type="text"
+                      [(ngModel)]="treatmentSearchInput"
+                      (input)="onTreatmentSearchInput($event.target.value)"
+                      (keydown)="onTreatmentSearchKeydown($event, paginatedPatients[expandedRowIndex])"
+                      (focus)="showTreatmentSuggestions = treatmentSearchInput.length > 0"
+                      (blur)="showTreatmentSuggestions = false"
+                      placeholder="Type to search treatment/services (e.g., 'medicine', 'therapy')..."
+                      class="search-input"
+                    />
+                    <div *ngIf="showTreatmentSuggestions && filteredTreatmentOptions.length > 0" class="suggestions-dropdown">
+                      <div
+                        *ngFor="let treatment of filteredTreatmentOptions; let i = index"
+                        (click)="selectTreatmentFromSearch(paginatedPatients[expandedRowIndex], treatment)"
+                        [class.selected]="selectedTreatmentIndex === i"
+                        class="suggestion-item"
+                      >
+                        {{ treatment }}
+                      </div>
+                    </div>
+                  </div>
+                  <small>Type to search • Use <strong>↑↓ arrows</strong> to navigate • Press <strong>Enter</strong> to select • Press <strong>Esc</strong> to close</small>
+                  <div class="multi-chip-list">
+                    <span
+                      class="chip"
+                      *ngFor="let t of paginatedPatients[expandedRowIndex].treatments"
+                    >
+                      {{ t }}
+                      <button class="chip-remove" type="button" (click)="removeTreatment(paginatedPatients[expandedRowIndex], t)">×</button>
+                    </span>
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label>Notes</label>
+                  <textarea
+                    [(ngModel)]="paginatedPatients[expandedRowIndex].notes"
+                    placeholder="Additional notes"
+                    rows="2"
+                  ></textarea>
+                </div>
+                <div class="button-group">
+                  <button
+                    (click)="savePatientData(paginatedPatients[expandedRowIndex])"
+                    class="btn btn-primary"
+                  >
+                    💾 Save Data
+                  </button>
+                  <button
+                    (click)="markAsReadyForPayment(paginatedPatients[expandedRowIndex])"
+                    class="btn btn-success"
+                  >
+                    💳 Mark Ready for Payment
+                  </button>
+                  <button (click)="cancelEdit()" class="btn btn-secondary">Cancel</button>
+                </div>
+              </div>
+
+              <div class="view-panel" *ngIf="editingRowIndex !== expandedRowIndex">
+                <div class="doc-section">
+                  <h4>Current Diagnosis</h4>
+                  <ng-container *ngIf="paginatedPatients[expandedRowIndex].diagnoses.length; else noDiagnosis">
+                    <ul>
+                      <li *ngFor="let d of paginatedPatients[expandedRowIndex].diagnoses">{{ d }}</li>
+                    </ul>
+                  </ng-container>
+                  <ng-template #noDiagnosis>
+                    <p>Not yet filled</p>
+                  </ng-template>
+                </div>
+                <div class="doc-section">
+                  <h4>Current Treatment</h4>
+                  <ng-container *ngIf="paginatedPatients[expandedRowIndex].treatments.length; else noTreatment">
+                    <ul>
+                      <li *ngFor="let t of paginatedPatients[expandedRowIndex].treatments">{{ t }}</li>
+                    </ul>
+                  </ng-container>
+                  <ng-template #noTreatment>
+                    <p>Not yet filled</p>
+                  </ng-template>
+                </div>
+                <div class="doc-section">
+                  <h4>Notes</h4>
+                  <p>{{ paginatedPatients[expandedRowIndex].notes || 'No notes' }}</p>
+                </div>
+                <div class="button-group">
+                  <button (click)="startEditing(expandedRowIndex)" class="btn btn-primary">
+                    ✎ Edit
+                  </button>
+                  <button
+                    (click)="markAsReadyForPayment(paginatedPatients[expandedRowIndex])"
+                    *ngIf="paginatedPatients[expandedRowIndex].status !== 'ready-for-payment'"
+                    class="btn btn-success"
+                  >
+                    💳 Mark Ready for Payment
+                  </button>
+                  <button
+                    routerLink="/receipt"
+                    *ngIf="paginatedPatients[expandedRowIndex].status === 'ready-for-payment'"
+                    class="btn btn-receipt"
+                  >
+                    📄 Go to Receipt
+                  </button>
+                </div>
+              </div>
+            </div>
+          </td>
+        </tr>
+
+        <tr *ngIf="paginatedPatients.length === 0">
+          <td colspan="9" class="no-data">No patients assigned.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Pagination -->
+  <div class="pagination-controls">
+    <button (click)="prevPage()" [disabled]="currentPage === 1" class="btn-nav">← Previous</button>
+    <span class="page-info">Page {{ currentPage }} of {{ totalPages || 1 }}</span>
+    <button (click)="nextPage()" [disabled]="currentPage >= totalPages" class="btn-nav">Next →</button>
+    <select [(ngModel)]="pageSize" (change)="currentPage = 1; applyFilters()" class="page-size-select">
+      <option *ngFor="let size of pageSizeOptions" [value]="size">{{ size }} per page</option>
+    </select>
+  </div>
+</section>

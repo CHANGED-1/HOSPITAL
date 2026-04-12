@@ -1,0 +1,94 @@
+<section class="page">
+  <header class="page-header">
+    <h1>Receipt (Finance)</h1>
+    <p>Use this screen for incoming cash receipt entry with budget/cost center mapping.</p>
+  </header>
+
+  <section class="receipt-section">
+    <div class="receipt-actions-row">
+      <h2>🧾 Receipt Entry</h2>
+      <button class="btn btn-primary" type="button" (click)="addLine()">+ Add Item</button>
+    </div>
+
+    <div class="cards-grid">
+      <article class="card card-patient">
+        <div class="card-title">👤 Patient Information</div>
+        <div class="form-grid">
+          <label>Patient Name<input type="text" [(ngModel)]="receiptInfo.receivedFrom" /></label>
+          <label>Phone<input type="text" [(ngModel)]="receiptInfo.phone" /></label>
+          <label>Age<input type="text" [(ngModel)]="receiptInfo.age" /></label>
+          <label>Sex<input type="text" [(ngModel)]="receiptInfo.sex" /></label>
+          <label>Village<input type="text" [(ngModel)]="receiptInfo.village" /></label>
+          <label>IP Number<input type="text" [(ngModel)]="receiptInfo.ipNumber" /></label>
+          <label>Registration #<input type="text" [(ngModel)]="receiptInfo.regNumber" /></label>
+          <label>ID Number<input type="text" [(ngModel)]="receiptInfo.idNumber" /></label>
+          <label>Served By<input type="text" [(ngModel)]="receiptInfo.servedBy" /></label>
+        </div>
+      </article>
+
+      <article class="card card-payment">
+        <div class="card-title">💳 Payment Information</div>
+        <div class="form-grid">
+          <label>Receipt No<input type="text" [(ngModel)]="receiptInfo.receiptNo" /></label>
+          <label>Date<input type="date" [(ngModel)]="receiptInfo.date" /></label>
+          <label>Payment Type<input type="text" [(ngModel)]="receiptInfo.receivedAs" /></label>
+          <label>Pricelist<input type="text" [(ngModel)]="receiptInfo.pricelist" /></label>
+          <label>Transaction<input type="text" [(ngModel)]="receiptInfo.transaction" /></label>
+          <label>Cheque No<input type="text" [(ngModel)]="receiptInfo.chequeNo" /></label>
+          <label>Account Period<input type="text" [(ngModel)]="receiptInfo.accPeriod" /></label>
+          <label>Figure<input type="text" [(ngModel)]="receiptInfo.figure" /></label>
+          <label>Words<input type="text" [(ngModel)]="receiptInfo.words" /></label>
+          <label>Payment for<input type="text" [(ngModel)]="receiptInfo.paymentFor" /></label>
+        </div>
+      </article>
+    </div>
+
+    <section class="table-card">
+      <div class="table-header">
+        <div class="section-title">🧾 Billing Items</div>
+        <div class="table-actions">
+          <button class="btn btn-secondary" type="button" (click)="addLine()">+ Add Item</button>
+        </div>
+      </div>
+
+      <div class="table-wrapper">
+        <table class="receipt-table">
+          <thead>
+            <tr>
+              <th>Qty</th>
+              <th>Description</th>
+              <th>Rate</th>
+              <th>Discount</th>
+              <th>VAT%</th>
+              <th>Total</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let line of receiptLines; let i = index">
+              <td><input type="number" min="1" [(ngModel)]="line.quantity" (ngModelChange)="updateReceiptLine(line)" /></td>
+              <td><input type="text" [(ngModel)]="line.description" placeholder="Description" /></td>
+              <td><input type="number" step="0.01" [(ngModel)]="line.rate" (ngModelChange)="updateReceiptLine(line)" /></td>
+              <td><input type="number" step="0.01" [(ngModel)]="line.discountedAmount" (ngModelChange)="updateReceiptLine(line)" /></td>
+              <td><input type="number" step="0.01" [(ngModel)]="line.vatRate" (ngModelChange)="updateReceiptLine(line)" /></td>
+              <td>{{ line.total | number:'1.2-2' }}</td>
+              <td class="action-col">
+                <button class="btn btn-icon" type="button" (click)="removeReceiptLine(i)">🗑</button>
+              </td>
+            </tr>
+            <tr *ngIf="receiptLines.length === 0">
+              <td colspan="7" class="empty-row">No entry yet. Click + Add Item to begin.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="summary-row">
+        <div>
+          <span class="label">Grand Total</span>
+          <span class="value">{{ receiptTotal | number:'1.2-2' }}</span>
+        </div>
+      </div>
+    </section>
+  </section>
+</section>

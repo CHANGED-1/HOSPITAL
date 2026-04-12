@@ -1,0 +1,20 @@
+<main class="settings-page">
+  <h1>Settings</h1>
+  <section class="settings-card">
+    <h2>Site Logo</h2>
+    <p>Only administrators can upload or clear the logo.</p>
+
+    <div class="logo-preview">
+      <img *ngIf="logoData()" [src]="logoData()" alt="Logo" />
+      <div *ngIf="!logoData()" class="logo-placeholder">No logo set</div>
+    </div>
+
+    <label class="logo-upload">
+      Upload Logo
+      <input #logoInput type="file" accept="image/*" (change)="onLogoUpload($event)" />
+    </label>
+
+    <button class="btn-primary" type="button" (click)="clearLogo()" [disabled]="!logoData()">Clear Logo</button>
+    <button class="btn-primary" type="button" (click)="clearAndUpload(logoInput)">Clear + Upload</button>
+  </section>
+</main>

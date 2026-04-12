@@ -1,0 +1,315 @@
+<section class="page">
+
+  <!-- PAGE HEADER -->
+  <header class="page-header">
+    <h1>OPD Register</h1>
+    <p>Out-Patient Department register for patient visits and treatments.</p>
+  </header>
+
+  <section class="form-section">
+    <h2>Add OPD Entry</h2>
+
+    <div class="form-group-section basic-info">
+      <h3>Basic Info</h3>
+      <div class="basic-info-grid">
+        <div class="basic-info-item">
+          <label>Date</label>
+          <input type="date" [(ngModel)]="newOpdEntry.date" />
+        </div>
+        <div class="basic-info-item">
+          <label>OPD No <span>(auto)</span></label>
+          <input type="text" [(ngModel)]="newOpdEntry.opdNo" readonly placeholder="(auto)" />
+        </div>
+        <div class="basic-info-item">
+          <label>Reg No <span>(auto)</span></label>
+          <input type="text" [(ngModel)]="newOpdEntry.regNo" readonly placeholder="(auto)" />
+        </div>
+      </div>
+    </div>
+
+    <div class="split-grid">
+      <div class="form-group-section">
+        <h3>Patient Details</h3>
+        <div class="form-row patient-row">
+          <div class="form-field">
+            <label>Patient Name *</label>
+            <input type="text" [(ngModel)]="newOpdEntry.patientName" placeholder="Enter patient name" />
+          </div>
+          <div class="form-field">
+            <label>Age *</label>
+            <input type="number" [(ngModel)]="newOpdEntry.age" placeholder="e.g. 35" />
+          </div>
+          <div class="form-field">
+            <label>Sex *</label>
+            <select [(ngModel)]="newOpdEntry.sex">
+              <option>Female</option>
+              <option>Male</option>
+              <option>Other</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label>Weight (kg)</label>
+            <input type="text" [(ngModel)]="newOpdEntry.weight" placeholder="e.g. 65" />
+          </div>
+          <div class="form-field">
+            <label>Height (cm)</label>
+            <input type="text" [(ngModel)]="newOpdEntry.height" placeholder="e.g. 172" />
+          </div>
+          <div class="form-field">
+            <label>Contact</label>
+            <input type="text" [(ngModel)]="newOpdEntry.contact" placeholder="Phone or mobile number" />
+          </div>
+          <div class="form-field">
+            <label>Address</label>
+            <input type="text" [(ngModel)]="newOpdEntry.address" placeholder="House, Street, City" />
+          </div>
+          <div class="form-field">
+            <label>Client Category</label>
+            <select [(ngModel)]="newOpdEntry.clientCategory">
+              <option>General</option>
+              <option>Emergency</option>
+              <option>Referral</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label>Referred From</label>
+            <input type="text" [(ngModel)]="newOpdEntry.referredFrom" placeholder="Optional" />
+          </div>
+        </div>
+      </div>
+
+      <div class="form-group-section">
+        <h3>Visit Details</h3>
+        <div class="form-row visit-row">
+          <div class="form-field">
+            <label>Department</label>
+            <input type="text" [(ngModel)]="newOpdEntry.department" placeholder="Select department" />
+          </div>
+          <div class="form-field">
+            <label>Doctor *</label>
+            <select [(ngModel)]="newOpdEntry.doctor">
+              <option *ngFor="let d of doctors" [value]="d">{{ d }}</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label>Complaint</label>
+            <input type="text" [(ngModel)]="newOpdEntry.complaint" placeholder="Enter main complaint" />
+          </div>
+          <div class="form-field">
+            <label>Diagnosis</label>
+            <input type="text" [(ngModel)]="newOpdEntry.diagnosis" placeholder="Enter diagnosis/findings" />
+          </div>
+          <div class="form-field">
+            <label>Treatment</label>
+            <input type="text" [(ngModel)]="newOpdEntry.treatment" placeholder="Treatment / prescription" />
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-group-section">
+      <h3>Screening</h3>
+      <div class="form-row">
+        <div class="form-field">
+          <label>Malaria Test</label>
+          <select [(ngModel)]="newOpdEntry.malariaTest">
+            <option>Not done</option>
+            <option>Positive</option>
+            <option>Negative</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label>TB Screen</label>
+          <select [(ngModel)]="newOpdEntry.tbScreen">
+            <option>No</option>
+            <option>Yes</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label>Palliative Care</label>
+          <select [(ngModel)]="newOpdEntry.palliativeCare">
+            <option>No</option>
+            <option>Yes</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label>Alcohol Use</label>
+          <select [(ngModel)]="newOpdEntry.alcoholUse">
+            <option>No</option>
+            <option>Yes</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="actions-row">
+      <button type="button" (click)="addOpdEntry()">Add OPD Entry</button>
+      <button type="button" class="ipd-redirect" routerLink="/ipd">Go to IPD Register</button>
+      <button type="button" (click)="exportToCsv()">Export to CSV</button>
+    </div>
+
+    <div class="filters-section">
+      <h3>Filters</h3>
+      <div class="form-row">
+        <div class="form-field">
+          <label>Date</label>
+          <input type="date" [(ngModel)]="filterDate" />
+        </div>
+        <div class="form-field">
+          <label>Doctor</label>
+          <select [(ngModel)]="filterDoctor">
+            <option value="">All</option>
+            <option *ngFor="let d of doctors" [value]="d">{{ d }}</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label>Department</label>
+          <input type="text" [(ngModel)]="filterDepartment" />
+        </div>
+        <div class="form-field">
+          <label>Patient Name</label>
+          <input type="text" [(ngModel)]="filterPatientName" placeholder="Search by name" />
+        </div>
+        <div class="form-field">
+          <label>Diagnosis</label>
+          <input type="text" [(ngModel)]="filterDiagnosis" placeholder="Search diagnosis" />
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="table-section">
+    <h2>OPD Register Entries ({{ filteredOpdRegister.length }} total)</h2>
+    <div class="table-controls">
+      <div class="bulk-actions" *ngIf="selectedRows.size > 0">
+        <button (click)="deleteSelectedRows()" class="delete-selected">Delete Selected ({{ selectedRows.size }})</button>
+      </div>
+      <div class="pagination-controls">
+        <label>Page Size:
+          <select [(ngModel)]="pageSize" (change)="changePageSize()">
+            <option *ngFor="let size of pageSizeOptions" [value]="size">{{ size }}</option>
+          </select>
+        </label>
+        <button (click)="goToPage(currentPage - 1)" [disabled]="currentPage <= 1">Previous</button>
+        <span>Page {{ currentPage }} of {{ totalPages }}</span>
+        <button (click)="goToPage(currentPage + 1)" [disabled]="currentPage >= totalPages">Next</button>
+      </div>
+    </div>
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th rowspan="2"><input type="checkbox" (change)="selectedRows.clear()" /></th>
+          <th rowspan="2">#</th>
+          <th colspan="7" class="group-header">Patient Details</th>
+          <th colspan="5" class="group-header">Clinical</th>
+          <th colspan="4" class="group-header">Screening</th>
+          <th colspan="2" class="group-header">Referral / Actions</th>
+        </tr>
+        <tr>
+          <th>Date</th>
+          <th>OPD No</th>
+          <th>Reg No</th>
+          <th>Patient</th>
+          <th>Age</th>
+          <th>Sex</th>
+          <th>Category</th>
+          <th>Department</th>
+          <th>Doctor</th>
+          <th>Complaint</th>
+          <th>Diagnosis</th>
+          <th>Treatment</th>
+          <th>Malaria</th>
+          <th>TB Screen</th>
+          <th>Palliative Care</th>
+          <th>Alcohol Use</th>
+          <th>Referred From</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let entry of paginatedEntries; let i = index; trackBy: trackByIndex">
+          <td><input type="checkbox" [checked]="selectedRows.has((currentPage - 1) * pageSize + i)" (change)="toggleRowSelection((currentPage - 1) * pageSize + i)" /></td>
+          <td>{{ (currentPage - 1) * pageSize + i + 1 }}</td>
+          <td *ngIf="!entry.editing">{{ entry.date }}</td>
+          <td *ngIf="entry.editing"><input type="date" [(ngModel)]="entry.date" /></td>
+          <td *ngIf="!entry.editing">{{ entry.opdNo }}</td>
+          <td *ngIf="entry.editing"><input type="text" [(ngModel)]="entry.opdNo" /></td>
+          <td *ngIf="!entry.editing">{{ entry.regNo }}</td>
+          <td *ngIf="entry.editing"><input type="text" [(ngModel)]="entry.regNo" /></td>
+          <td *ngIf="!entry.editing">{{ entry.patientName }}</td>
+          <td *ngIf="entry.editing"><input type="text" [(ngModel)]="entry.patientName" /></td>
+          <td *ngIf="!entry.editing">{{ entry.age }}</td>
+          <td *ngIf="entry.editing"><input type="number" [(ngModel)]="entry.age" /></td>
+          <td *ngIf="!entry.editing">{{ entry.sex }}</td>
+          <td *ngIf="entry.editing">
+            <select [(ngModel)]="entry.sex">
+              <option>Female</option>
+              <option>Male</option>
+              <option>Other</option>
+            </select>
+          </td>
+          <td *ngIf="!entry.editing">{{ entry.clientCategory }}</td>
+          <td *ngIf="entry.editing">
+            <select [(ngModel)]="entry.clientCategory">
+              <option>General</option>
+              <option>Emergency</option>
+              <option>Referral</option>
+            </select>
+          </td>
+          <td *ngIf="!entry.editing">{{ entry.department }}</td>
+          <td *ngIf="entry.editing"><input type="text" [(ngModel)]="entry.department" /></td>
+          <td *ngIf="!entry.editing">{{ entry.doctor }}</td>
+          <td *ngIf="entry.editing">
+            <select [(ngModel)]="entry.doctor">
+              <option *ngFor="let d of doctors" [value]="d">{{ d }}</option>
+            </select>
+          </td>
+          <td *ngIf="!entry.editing">{{ entry.complaint }}</td>
+          <td *ngIf="entry.editing"><input type="text" [(ngModel)]="entry.complaint" /></td>
+          <td *ngIf="!entry.editing">{{ entry.diagnosis }}</td>
+          <td *ngIf="entry.editing"><input type="text" [(ngModel)]="entry.diagnosis" /></td>
+          <td *ngIf="!entry.editing">{{ entry.treatment }}</td>
+          <td *ngIf="entry.editing"><input type="text" [(ngModel)]="entry.treatment" /></td>
+          <td *ngIf="!entry.editing">{{ entry.malariaTest }}</td>
+          <td *ngIf="entry.editing">
+            <select [(ngModel)]="entry.malariaTest">
+              <option>Not done</option>
+              <option>Positive</option>
+              <option>Negative</option>
+            </select>
+          </td>
+          <td *ngIf="!entry.editing">{{ entry.tbScreen }}</td>
+          <td *ngIf="entry.editing">
+            <select [(ngModel)]="entry.tbScreen">
+              <option>Yes</option>
+              <option>No</option>
+            </select>
+          </td>
+          <td *ngIf="!entry.editing">{{ entry.palliativeCare }}</td>
+          <td *ngIf="entry.editing">
+            <select [(ngModel)]="entry.palliativeCare">
+              <option>Yes</option>
+              <option>No</option>
+            </select>
+          </td>
+          <td *ngIf="!entry.editing">{{ entry.alcoholUse }}</td>
+          <td *ngIf="entry.editing">
+            <select [(ngModel)]="entry.alcoholUse">
+              <option>Yes</option>
+              <option>No</option>
+            </select>
+          </td>
+          <td *ngIf="!entry.editing">{{ entry.referredFrom }}</td>
+          <td *ngIf="entry.editing"><input type="text" [(ngModel)]="entry.referredFrom" /></td>
+          <td>
+            <button *ngIf="!entry.editing" (click)="editOpdEntry((currentPage - 1) * pageSize + i)">Edit</button>
+            <button *ngIf="entry.editing" (click)="saveOpdEntry((currentPage - 1) * pageSize + i)">Save</button>
+            <button *ngIf="entry.editing" (click)="cancelOpdEdit((currentPage - 1) * pageSize + i)">Cancel</button>
+            <button (click)="deleteOpdEntry((currentPage - 1) * pageSize + i)">Delete</button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+</section>

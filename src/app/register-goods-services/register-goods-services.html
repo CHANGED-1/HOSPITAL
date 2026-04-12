@@ -1,0 +1,125 @@
+<section class="page">
+  <header class="page-header">
+    <h1>Goods & Services</h1>
+    <p>Manage inventory items, goods, and services with budget and cost center classification.</p>
+  </header>
+
+  <section class="form-section">
+    <h2>Add / Update Item</h2>
+    <div class="form-row">
+      <label>Product name<input type="text" [(ngModel)]="newItem.productName" /></label>
+      <label>Alternative name<input type="text" [(ngModel)]="newItem.alternativeName" /></label>
+      <label>Budget Tag
+        <select [(ngModel)]="newItem.budgetTag">
+          <option value="">-- Select --</option>
+          <option *ngFor="let option of budgetOptions">{{ option }}</option>
+        </select>
+      </label>
+      <label>CostCenter Tag
+        <select [(ngModel)]="newItem.costCenterTag">
+          <option value="">-- Select --</option>
+          <option *ngFor="let option of costCenterOptions">{{ option }}</option>
+        </select>
+      </label>
+      <label>Category
+        <select [(ngModel)]="newItem.category">
+          <option value="">-- Select --</option>
+          <option *ngFor="let option of categoryOptions">{{ option }}</option>
+        </select>
+      </label>
+      <label>Price/Cost<input type="text" [(ngModel)]="newItem.priceCost" /></label>
+      <label>Status
+        <select [(ngModel)]="newItem.status">
+          <option>ACTIVE</option>
+          <option>NOT ACTIVE</option>
+        </select>
+      </label>
+      <label>Barcode1<input type="text" [(ngModel)]="newItem.barcode1" /></label>
+      <label>Barcode2<input type="text" [(ngModel)]="newItem.barcode2" /></label>
+    </div>
+    <button type="button" (click)="addItem()">Save Item</button>
+
+    <div class="upload-section">
+      <label>Upload goods/items file (CSV or Excel)
+        <input type="file" accept=".csv,.xlsx,.xls" (change)="onFileSelected($event)" />
+      </label>
+      <p class="hint">File columns: Product Name, Alternative Name, Budget Tag, CostCenter Tag, Category, Price/Cost, Status, Barcode1, Barcode2</p>
+
+      <div class="upload-actions" *ngIf="pendingUploadName">
+        <span>Selected file: {{ pendingUploadName }}</span>
+        <button type="button" (click)="openUploadedFile()">Open file and import</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="table-section">
+    <h2>Goods / Items List</h2>
+    <div class="table-controls">
+      <input type="text" placeholder="Search goods..." [(ngModel)]="searchTerm" />
+      <button type="button" *ngIf="isDirty" (click)="manualSave()">Save Changes</button>
+    </div>
+    <table class="data-table" (contextmenu)="onRightClick($event)">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Product name</th>
+          <th>Alternative name</th>
+          <th>Budget Tag</th>
+          <th>CostCenter Tag</th>
+          <th>Category</th>
+          <th>Price/Cost</th>
+          <th>Status</th>
+          <th>Barcode1</th>
+          <th>Barcode2</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let item of paginatedItems; let i = index; trackBy: trackByIndex">
+          <td>{{ (currentPage - 1) * itemsPerPage + i + 1 }}</td>
+          <td><input type="text" [(ngModel)]="item.productName" (change)="updateItem()" /></td>
+          <td><input type="text" [(ngModel)]="item.alternativeName" (change)="updateItem()" /></td>
+          <td>
+            <select [(ngModel)]="item.budgetTag" (change)="updateItem()">
+              <option value="">-- Select --</option>
+              <option *ngFor="let option of budgetOptions">{{ option }}</option>
+            </select>
+          </td>
+          <td>
+            <select [(ngModel)]="item.costCenterTag" (change)="updateItem()">
+              <option value="">-- Select --</option>
+              <option *ngFor="let option of costCenterOptions">{{ option }}</option>
+            </select>
+          </td>
+          <td>
+            <select [(ngModel)]="item.category" (change)="updateItem()">
+              <option value="">-- Select --</option>
+              <option *ngFor="let option of categoryOptions">{{ option }}</option>
+            </select>
+          </td>
+          <td><input type="text" [(ngModel)]="item.priceCost" (change)="updateItem()" /></td>
+          <td>
+            <select [(ngModel)]="item.status" (change)="updateItem()">
+              <option>ACTIVE</option>
+              <option>NOT ACTIVE</option>
+            </select>
+          </td>
+          <td><input type="text" [(ngModel)]="item.barcode1" (change)="updateItem()" /></td>
+          <td><input type="text" [(ngModel)]="item.barcode2" (change)="updateItem()" /></td>
+          <td><button type="button" (click)="deleteItem((currentPage - 1) * itemsPerPage + i)">Delete</button></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="context-menu" *ngIf="showContextMenu" [style.left.px]="contextMenuX" [style.top.px]="contextMenuY">
+      <button (click)="exportToExcel()">Export to Excel</button>
+      <button (click)="exportToPdf()">Export to PDF</button>
+    </div>
+
+    <div class="pagination" *ngIf="totalPages > 1">
+      <button (click)="prevPage()" [disabled]="currentPage === 1">Previous</button>
+      <span>Page {{ currentPage }} of {{ totalPages }}</span>
+      <button (click)="nextPage()" [disabled]="currentPage === totalPages">Next</button>
+    </div>
+  </section>
+</section>
