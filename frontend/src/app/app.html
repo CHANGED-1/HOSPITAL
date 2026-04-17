@@ -1,0 +1,75 @@
+<header class="app-header">
+  <div class="brand brand-logo-row">
+    <div class="logo-preview">
+      <img *ngIf="logoData()" [src]="logoData()" alt="Logo" />
+      <div *ngIf="!logoData()" class="logo-placeholder">Logo</div>
+    </div>
+    <div>
+      <span class="brand-title">Bugembe HCIV</span>
+      <span class="brand-subtitle">Patient Record Management</span>
+    </div>
+  </div>
+
+  <nav class="app-nav" *ngIf="auth.isLoggedIn()">
+    <a routerLink="/dashboard" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Dashboard</a>
+    <a routerLink="/patients" routerLinkActive="active">Patients</a>
+    <a routerLink="/doctor-dashboard" routerLinkActive="active">Doctor Dashboard</a>
+    <a routerLink="/opd" routerLinkActive="active">OPD</a>
+    <a routerLink="/ipd" routerLinkActive="active">IPD</a>
+    <a routerLink="/reports" routerLinkActive="active">Reports</a>
+
+    <!-- Register Dropdown -->
+    <div class="dropdown" tabindex="0">
+      <button class="dropdown-trigger" type="button">Register ▾</button>
+      <ul class="dropdown-menu">
+        <li><a routerLink="/register">Patient Register</a></li>
+        <li><a routerLink="/service">Service Register</a></li>
+        <li><a routerLink="/doctors">Doctors</a></li>
+        <li><a routerLink="/departments">Departments</a></li>
+      </ul>
+    </div>
+
+    <!-- Finance Dropdown -->
+    <div class="dropdown" tabindex="0">
+      <button class="dropdown-trigger" type="button">Finance ▾</button>
+      <ul class="dropdown-menu">
+        <li><a routerLink="/receipt">Receipt</a></li>
+        <li><a routerLink="/outgoing-invoices">Outgoing Invoices</a></li>
+        <li><a routerLink="/incoming-invoices">Incoming Invoices</a></li>
+        <li><a routerLink="/payments">Payments</a></li>
+      </ul>
+    </div>
+
+    <!-- Inventory Dropdown -->
+    <div class="dropdown" tabindex="0">
+      <button class="dropdown-trigger" type="button">Inventory ▾</button>
+      <ul class="dropdown-menu">
+        <li><a routerLink="/stock">Stock</a></li>
+        <li><a routerLink="/register-goods-services">Register Goods / Items</a></li>
+        <li><a routerLink="/register-diagnoses">Register Diagnoses</a></li>
+        <li><a routerLink="/suppliers">Suppliers</a></li>
+      </ul>
+    </div>
+
+    <!-- System Dropdown -->
+    <div class="dropdown" tabindex="0">
+      <button class="dropdown-trigger" type="button">System ▾</button>
+      <ul class="dropdown-menu">
+        <li><a routerLink="/settings">Settings</a></li>
+        <li><a routerLink="/tools">Tools</a></li>
+        <li><a routerLink="/taskpane">Task Pane</a></li>
+        <li><a routerLink="/users">Users</a></li>
+        <li><a routerLink="/backup">Backup</a></li>
+      </ul>
+    </div>
+
+    <button class="logout-btn" type="button" (click)="auth.logout()">Logout</button>
+  </nav>
+  <div class="user-role" *ngIf="auth.isLoggedIn()">Logged in as: {{ auth.currentUser?.username }} ({{ auth.role }})</div>
+
+
+</header>
+
+<main class="app-main">
+  <router-outlet></router-outlet>
+</main>

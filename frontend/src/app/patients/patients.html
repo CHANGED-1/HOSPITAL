@@ -1,0 +1,265 @@
+<section class="page">
+
+  <!-- Page Header -->
+  <header class="page-header">
+    <div class="header-text">
+      <h1>Patients</h1>
+      <p>Combined OPD &amp; IPD patient records</p>
+    </div>
+    <div class="header-actions">
+      <button class="btn-export" (click)="exportCSV()" title="Export current view to CSV">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+          <polyline points="7 10 12 15 17 10"></polyline>
+          <line x1="12" y1="15" x2="12" y2="3"></line>
+        </svg>
+        Export CSV
+      </button>
+      <button class="btn-refresh" (click)="refreshPatientRecords()" [disabled]="isLoading">
+        <svg class="refresh-icon" [class.spinning]="isLoading" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="23 4 23 10 17 10"></polyline>
+          <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+        </svg>
+        Refresh
+      </button>
+    </div>
+  </header>
+
+  <!-- Stats Strip -->
+  <div class="stats-strip">
+    <div class="stat-card stat-total">
+      <div class="stat-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+          <circle cx="9" cy="7" r="4"></circle>
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+          <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+        </svg>
+      </div>
+      <div class="stat-body">
+        <span class="stat-value">{{ totalPatients }}</span>
+        <span class="stat-label">Total Patients</span>
+      </div>
+    </div>
+
+    <div class="stat-card stat-opd" (click)="setSourceFilter('OPD')" role="button" tabindex="0"
+         (keydown.enter)="setSourceFilter('OPD')" [class.active]="sourceFilter === 'OPD'">
+      <div class="stat-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+          <polyline points="9 22 9 12 15 12 15 22"></polyline>
+        </svg>
+      </div>
+      <div class="stat-body">
+        <span class="stat-value">{{ opdCount }}</span>
+        <span class="stat-label">OPD Visits</span>
+      </div>
+    </div>
+
+    <div class="stat-card stat-ipd" (click)="setSourceFilter('IPD')" role="button" tabindex="0"
+         (keydown.enter)="setSourceFilter('IPD')" [class.active]="sourceFilter === 'IPD'">
+      <div class="stat-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"></path>
+        </svg>
+      </div>
+      <div class="stat-body">
+        <span class="stat-value">{{ ipdCount }}</span>
+        <span class="stat-label">IPD Admissions</span>
+      </div>
+    </div>
+
+    <div class="stat-card stat-today">
+      <div class="stat-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+          <line x1="16" y1="2" x2="16" y2="6"></line>
+          <line x1="8" y1="2" x2="8" y2="6"></line>
+          <line x1="3" y1="10" x2="21" y2="10"></line>
+        </svg>
+      </div>
+      <div class="stat-body">
+        <span class="stat-value">{{ todayCount }}</span>
+        <span class="stat-label">Today</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Records Section -->
+  <section class="records-section">
+
+    <!-- Source Tabs -->
+    <div class="source-tabs" role="tablist">
+      <button role="tab" [class.active]="sourceFilter === 'ALL'"
+              (click)="setSourceFilter('ALL')" [attr.aria-selected]="sourceFilter === 'ALL'">
+        All Records
+        <span class="tab-count">{{ totalPatients }}</span>
+      </button>
+      <button role="tab" [class.active]="sourceFilter === 'OPD'"
+              (click)="setSourceFilter('OPD')" [attr.aria-selected]="sourceFilter === 'OPD'">
+        OPD
+        <span class="tab-count opd">{{ opdCount }}</span>
+      </button>
+      <button role="tab" [class.active]="sourceFilter === 'IPD'"
+              (click)="setSourceFilter('IPD')" [attr.aria-selected]="sourceFilter === 'IPD'">
+        IPD
+        <span class="tab-count ipd">{{ ipdCount }}</span>
+      </button>
+    </div>
+
+    <!-- Filters Bar -->
+    <div class="filters-bar">
+      <div class="search-wrap">
+        <svg class="search-icon-input" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+        <input
+          type="search"
+          [(ngModel)]="searchText"
+          (ngModelChange)="currentPage = 1"
+          placeholder="Search by name, ID, diagnosis, village…"
+          class="search-input"
+          aria-label="Search patients"
+        />
+      </div>
+
+      <input
+        type="date"
+        [(ngModel)]="filterDate"
+        (ngModelChange)="currentPage = 1"
+        class="date-filter"
+        aria-label="Filter by date"
+      />
+
+      <button class="btn-clear-filters" *ngIf="hasActiveFilters" (click)="clearFilters()" title="Clear all filters">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+        Clear
+      </button>
+    </div>
+
+    <!-- Records Info -->
+    <div class="records-meta">
+      <span class="records-count">
+        Showing <strong>{{ paginatedRecords.length }}</strong> of
+        <strong>{{ filteredPatientRecords.length }}</strong> records
+        <ng-container *ngIf="hasActiveFilters"> (filtered from {{ totalPatients }})</ng-container>
+      </span>
+    </div>
+
+    <!-- Table -->
+    <div class="table-wrap">
+      <table class="records-table" aria-label="Patient records">
+        <thead>
+          <tr>
+            <th class="col-no">No</th>
+            <th class="col-sortable" (click)="setSort('date')">
+              Date <span class="sort-icon">{{ sortIcon('date') }}</span>
+            </th>
+            <th>Time</th>
+            <th>Reg No</th>
+            <th>ID Number</th>
+            <th class="col-sortable" (click)="setSort('names')">
+              Names <span class="sort-icon">{{ sortIcon('names') }}</span>
+            </th>
+            <th class="col-sortable" (click)="setSort('age')">
+              Age <span class="sort-icon">{{ sortIcon('age') }}</span>
+            </th>
+            <th>Sex</th>
+            <th>Village</th>
+            <th>Kgs</th>
+            <th>Attendance</th>
+            <th>Diagnosis</th>
+            <th>Treatment</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr
+            *ngFor="let record of paginatedRecords"
+            [class.opd-row]="record.source === 'OPD'"
+            [class.ipd-row]="record.source === 'IPD'"
+          >
+            <td class="col-no">{{ record.rowNo }}</td>
+            <td class="col-date">{{ record.date }}</td>
+            <td>{{ record.time || '—' }}</td>
+            <td>{{ record.regNo || '—' }}</td>
+            <td>{{ record.idNumber || '—' }}</td>
+            <td class="names-cell">{{ record.names }}</td>
+            <td>{{ record.age || '—' }}</td>
+            <td>{{ record.sex || '—' }}</td>
+            <td>{{ record.village || '—' }}</td>
+            <td>{{ record.kgs || '—' }}</td>
+            <td class="attendance-cell">
+              <span [class.opd-badge]="record.source === 'OPD'" [class.ipd-badge]="record.source === 'IPD'">
+                {{ record.attendance }}
+              </span>
+            </td>
+            <td class="wrap-cell">{{ record.diagnosis || '—' }}</td>
+            <td class="wrap-cell">{{ record.treatment || '—' }}</td>
+          </tr>
+
+          <!-- Empty state -->
+          <tr *ngIf="paginatedRecords.length === 0 && !isLoading">
+            <td colspan="13" class="empty-state">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              </svg>
+              <p>No patient records found</p>
+              <small *ngIf="hasActiveFilters">Try adjusting your search or filters</small>
+              <small *ngIf="!hasActiveFilters">No records have been loaded yet</small>
+              <button *ngIf="hasActiveFilters" class="btn-clear-empty" (click)="clearFilters()">Clear Filters</button>
+            </td>
+          </tr>
+
+          <!-- Loading state -->
+          <tr *ngIf="isLoading">
+            <td colspan="13" class="loading-state">
+              <span class="loader"></span>
+              Loading records…
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    <div class="pagination-controls" *ngIf="totalRecordPages > 1 || filteredPatientRecords.length > 0">
+      <button class="btn-nav" (click)="prevRecordPage()" [disabled]="currentPage === 1" aria-label="Previous page">
+        ← Prev
+      </button>
+
+      <div class="page-numbers">
+        <button *ngIf="pageNumbers[0] > 1" class="page-btn" (click)="goToPage(1)">1</button>
+        <span *ngIf="pageNumbers[0] > 2" class="ellipsis">…</span>
+        <button
+          *ngFor="let p of pageNumbers"
+          class="page-btn"
+          [class.active]="p === currentPage"
+          (click)="goToPage(p)"
+        >{{ p }}</button>
+        <span *ngIf="pageNumbers[pageNumbers.length - 1] < totalRecordPages - 1" class="ellipsis">…</span>
+        <button *ngIf="pageNumbers[pageNumbers.length - 1] < totalRecordPages" class="page-btn" (click)="goToPage(totalRecordPages)">
+          {{ totalRecordPages }}
+        </button>
+      </div>
+
+      <button class="btn-nav" (click)="nextRecordPage()" [disabled]="currentPage >= totalRecordPages" aria-label="Next page">
+        Next →
+      </button>
+
+      <select
+        [ngModel]="pageSize"
+        (ngModelChange)="onPageSizeChange($event)"
+        class="page-size-select"
+        aria-label="Records per page"
+      >
+        <option *ngFor="let size of pageSizeOptions" [ngValue]="size">{{ size }} per page</option>
+      </select>
+    </div>
+
+  </section>
+</section>
