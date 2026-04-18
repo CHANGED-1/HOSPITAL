@@ -9,13 +9,12 @@ import { takeUntil, finalize } from 'rxjs/operators';
 const API = 'http://localhost:3000/api';
 
 export interface OPDRegisterEntry {
-  // Local display fields
-  id?: string;                 // API id (present after save)
+  id?: string;
   opdNo: string;
   regNo: string;
   date: string;
   patientName: string;
-  patientId?: string;          // FK to patients table
+  patientId?: string;
   age: number;
   sex: string;
   clientCategory: string;
@@ -28,7 +27,7 @@ export interface OPDRegisterEntry {
   treatment: string;
   department: string;
   doctor: string;
-  doctorId?: string;           // FK to users table
+  doctorId?: string;
   malariaTest: string;
   tbScreen: string;
   palliativeCare: string;
@@ -55,52 +54,46 @@ export interface DoctorOption {
 export class OPDRegister implements OnInit, OnDestroy {
   public doctors: DoctorOption[] = [];
   public opdRegister: OPDRegisterEntry[] = [];
-
   public newOpdEntry: OPDRegisterEntry = this.blankEntry();
 
-  // HMIS metadata (stored locally — these are form-level display fields)
-  public healthFacilityName = '';
-  public month = '';
-  public year = '';
-  public ward = '';
+  // UI state
+  public formCollapsed = false;
+  public filtersCollapsed = false;
 
   // Filters
-  public filterDate = '';
-  public filterDoctor = '';
-  public filterDepartment = '';
-  public filterDiagnosis = '';
-  public filterMalariaTest = '';
-  public filterPatientName = '';
+  public filterDate         = '';
+  public filterDoctor       = '';
+  public filterDepartment   = '';
+  public filterDiagnosis    = '';
+  public filterMalariaTest  = '';
+  public filterPatientName  = '';
 
   // Pagination
-  public pageSize = 10;
-  public currentPage = 1;
-  public pageSizeOptions = [5, 10, 20];
+  public pageSize        = 10;
+  public currentPage     = 1;
+  public pageSizeOptions = [5, 10, 20, 50];
 
-  // Bulk delete
+  // Bulk selection
   public selectedRows = new Set<number>();
 
   // State
-  public isLoading = false;
-  public isSaving = false;
-  public errorMessage = '';
+  public isLoading     = false;
+  public isSaving      = false;
+  public errorMessage  = '';
   public successMessage = '';
 
   private destroy$ = new Subject<void>();
 
   constructor(private http: HttpClient) {}
 
-  ngOnInit(): void {
-    this.loadInitialData();
-  }
+  ngOnInit(): void { this.loadInitialData(); }
 
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
   }
 
-  // ─── Initial data load ─────────────────────────────────────────
-
+  // ─── Initial load ──────────────────────────────────────────────
   private loadInitialData(): void {
     this.isLoading = true;
 
@@ -112,16 +105,12 @@ export class OPDRegister implements OnInit, OnDestroy {
       .subscribe({
         next: ({ doctors, visits }) => {
           this.doctors = (doctors?.data ?? []).map((u: any) => ({
-            id: u.id,
-            name: u.name,
-            username: u.username,
+            id: u.id, name: u.name, username: u.username,
           }));
-
           if (this.doctors.length > 0) {
             this.newOpdEntry.doctor   = this.doctors[0].username;
             this.newOpdEntry.doctorId = this.doctors[0].id;
           }
-
           this.opdRegister = (visits?.data ?? []).map((v: any) => this.mapVisitToEntry(v));
         },
         error: (err) => {
@@ -132,9 +121,8 @@ export class OPDRegister implements OnInit, OnDestroy {
   }
 
   // ─── Refresh ───────────────────────────────────────────────────
-
   public refreshOpdRegister(): void {
-    this.isLoading = true;
+    this.isLoading    = true;
     this.errorMessage = '';
 
     this.http.get<any>(`${API}/opd?limit=1000`)
@@ -150,41 +138,38 @@ export class OPDRegister implements OnInit, OnDestroy {
       });
   }
 
-  // ─── Map API → display entry ───────────────────────────────────
-
+  // ─── Mapping ───────────────────────────────────────────────────
   private mapVisitToEntry(v: any): OPDRegisterEntry {
     return {
-      id:            v.id,
-      opdNo:         v.id ?? '',
-      regNo:         v.patient_number ?? '',
-      date:          v.visit_date ?? '',
-      patientName:   v.patient_name ?? '',
-      patientId:     v.patient_id,
-      age:           v.age ?? 0,
-      sex:           v.gender ?? '',
+      id:             v.id,
+      opdNo:          v.id ?? '',
+      regNo:          v.patient_number ?? '',
+      date:           v.visit_date ?? '',
+      patientName:    v.patient_name ?? '',
+      patientId:      v.patient_id,
+      age:            v.age ?? 0,
+      sex:            v.gender ?? '',
       clientCategory: v.client_category ?? 'General',
-      contact:       v.contact ?? '',
-      address:       v.address ?? '',
-      weight:        v.weight ?? '',
-      height:        v.height ?? '',
-      complaint:     v.chief_complaint ?? '',
-      diagnosis:     v.diagnosis ?? '',
-      treatment:     v.treatment_plan ?? '',
-      department:    v.department ?? '',
-      doctor:        v.doctor_name ?? '',
-      doctorId:      v.doctor_id,
-      malariaTest:   v.vitals?.malariaTest ?? 'Not done',
-      tbScreen:      v.vitals?.tbScreen ?? 'No',
+      contact:        v.contact ?? '',
+      address:        v.address ?? '',
+      weight:         v.weight ?? '',
+      height:         v.height ?? '',
+      complaint:      v.chief_complaint ?? '',
+      diagnosis:      v.diagnosis ?? '',
+      treatment:      v.treatment_plan ?? '',
+      department:     v.department ?? '',
+      doctor:         v.doctor_name ?? '',
+      doctorId:       v.doctor_id,
+      malariaTest:    v.vitals?.malariaTest ?? 'Not done',
+      tbScreen:       v.vitals?.tbScreen ?? 'No',
       palliativeCare: v.vitals?.palliativeCare ?? 'No',
-      alcoholUse:    v.vitals?.alcoholUse ?? 'No',
-      referredFrom:  v.vitals?.referredFrom ?? '',
-      notes:         v.notes ?? '',
-      editing:       false,
-      saving:        false,
+      alcoholUse:     v.vitals?.alcoholUse ?? 'No',
+      referredFrom:   v.vitals?.referredFrom ?? '',
+      notes:          v.notes ?? '',
+      editing:        false,
+      saving:         false,
     };
   }
-
-  // ─── Map display entry → API body ─────────────────────────────
 
   private mapEntryToBody(entry: OPDRegisterEntry): object {
     return {
@@ -195,22 +180,21 @@ export class OPDRegister implements OnInit, OnDestroy {
       diagnosis:       entry.diagnosis,
       treatment_plan:  entry.treatment,
       vitals: {
-        weight:        entry.weight,
-        height:        entry.height,
-        malariaTest:   entry.malariaTest,
-        tbScreen:      entry.tbScreen,
+        weight:         entry.weight,
+        height:         entry.height,
+        malariaTest:    entry.malariaTest,
+        tbScreen:       entry.tbScreen,
         palliativeCare: entry.palliativeCare,
-        alcoholUse:    entry.alcoholUse,
-        referredFrom:  entry.referredFrom,
+        alcoholUse:     entry.alcoholUse,
+        referredFrom:   entry.referredFrom,
         clientCategory: entry.clientCategory,
-        contact:       entry.contact,
+        contact:        entry.contact,
       },
       notes: entry.notes,
     };
   }
 
   // ─── Add entry ─────────────────────────────────────────────────
-
   public addOpdEntry(): void {
     const e = this.newOpdEntry;
     if (!e.date || !e.patientName || !e.age || !e.sex || !e.doctorId) {
@@ -218,52 +202,42 @@ export class OPDRegister implements OnInit, OnDestroy {
       return;
     }
 
-    this.isSaving = true;
+    this.isSaving     = true;
     this.errorMessage = '';
 
-    // First resolve or create the patient, then create the OPD visit
     this.resolvePatient(e).then(patientId => {
       e.patientId = patientId;
-      const body = this.mapEntryToBody(e);
-
-      this.http.post<any>(`${API}/opd`, body)
+      this.http.post<any>(`${API}/opd`, this.mapEntryToBody(e))
         .pipe(takeUntil(this.destroy$), finalize(() => { this.isSaving = false; }))
         .subscribe({
           next: (res) => {
-            const saved = this.mapVisitToEntry(res.data);
-            this.opdRegister = [saved, ...this.opdRegister];
+            this.opdRegister = [this.mapVisitToEntry(res.data), ...this.opdRegister];
             this.newOpdEntry = this.blankEntry();
             if (this.doctors.length > 0) {
               this.newOpdEntry.doctor   = this.doctors[0].username;
               this.newOpdEntry.doctorId = this.doctors[0].id;
             }
-            this.showSuccess('OPD entry added.');
+            this.showSuccess('OPD entry added successfully.');
           },
           error: (err) => {
             this.errorMessage = err?.error?.message ?? 'Failed to save OPD entry.';
           },
         });
     }).catch(() => {
-      this.isSaving = false;
+      this.isSaving     = false;
       this.errorMessage = 'Failed to resolve patient. Ensure the patient is registered.';
     });
   }
 
-  /** Look up patient by name, return their id. In a real flow this would use a patient search modal. */
   private resolvePatient(entry: OPDRegisterEntry): Promise<string> {
     if (entry.patientId) return Promise.resolve(entry.patientId);
-
     return new Promise((resolve, reject) => {
       this.http.get<any>(`${API}/patients?search=${encodeURIComponent(entry.patientName)}&limit=1`)
         .pipe(takeUntil(this.destroy$))
         .subscribe({
           next: (res) => {
             const patient = res?.data?.[0];
-            if (patient) {
-              resolve(patient.id);
-            } else {
-              reject(new Error('Patient not found'));
-            }
+            patient ? resolve(patient.id) : reject(new Error('Patient not found'));
           },
           error: reject,
         });
@@ -271,7 +245,6 @@ export class OPDRegister implements OnInit, OnDestroy {
   }
 
   // ─── Edit / save / cancel ──────────────────────────────────────
-
   public editOpdEntry(index: number): void {
     this.opdRegister[index].editing = true;
   }
@@ -280,21 +253,21 @@ export class OPDRegister implements OnInit, OnDestroy {
     const entry = this.opdRegister[index];
     if (!entry.id) return;
 
-    entry.saving = true;
+    entry.saving     = true;
     this.errorMessage = '';
 
-    const body: any = {
+    const body = {
       chief_complaint: entry.complaint,
       diagnosis:       entry.diagnosis,
       treatment_plan:  entry.treatment,
       vitals: {
-        weight:        entry.weight,
-        height:        entry.height,
-        malariaTest:   entry.malariaTest,
-        tbScreen:      entry.tbScreen,
+        weight:         entry.weight,
+        height:         entry.height,
+        malariaTest:    entry.malariaTest,
+        tbScreen:       entry.tbScreen,
         palliativeCare: entry.palliativeCare,
-        alcoholUse:    entry.alcoholUse,
-        referredFrom:  entry.referredFrom,
+        alcoholUse:     entry.alcoholUse,
+        referredFrom:   entry.referredFrom,
       },
       notes: entry.notes,
     };
@@ -307,7 +280,7 @@ export class OPDRegister implements OnInit, OnDestroy {
           this.showSuccess('Entry updated.');
         },
         error: (err) => {
-          entry.saving = false;
+          entry.saving     = false;
           this.errorMessage = err?.error?.message ?? 'Failed to save changes.';
         },
       });
@@ -315,28 +288,18 @@ export class OPDRegister implements OnInit, OnDestroy {
 
   public cancelOpdEdit(index: number): void {
     this.opdRegister[index].editing = false;
-    // Re-fetch the original from the API to discard local changes
     const id = this.opdRegister[index].id;
     if (!id) return;
-
     this.http.get<any>(`${API}/opd/${id}`)
       .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: (res) => {
-          this.opdRegister[index] = this.mapVisitToEntry(res.data);
-        },
-      });
+      .subscribe({ next: (res) => { this.opdRegister[index] = this.mapVisitToEntry(res.data); } });
   }
 
   // ─── Delete ────────────────────────────────────────────────────
-
   public deleteOpdEntry(index: number): void {
     const entry = this.opdRegister[index];
     if (!entry.id) return;
-
-    // Optimistic: remove immediately, rollback on error
     const removed = this.opdRegister.splice(index, 1)[0];
-
     this.http.patch<any>(`${API}/opd/${entry.id}`, { status: 'completed' })
       .pipe(takeUntil(this.destroy$))
       .subscribe({
@@ -350,14 +313,11 @@ export class OPDRegister implements OnInit, OnDestroy {
   public deleteSelectedRows(): void {
     const indices = Array.from(this.selectedRows).sort((a, b) => b - a);
     const removed: Array<{ index: number; entry: OPDRegisterEntry }> = [];
-
     indices.forEach(i => {
       removed.push({ index: i, entry: this.opdRegister[i] });
       this.opdRegister.splice(i, 1);
     });
     this.selectedRows.clear();
-
-    // Fire PATCH for each (mark as completed / soft-delete)
     removed.forEach(({ entry }) => {
       if (!entry.id) return;
       this.http.patch<any>(`${API}/opd/${entry.id}`, { status: 'completed' })
@@ -366,8 +326,7 @@ export class OPDRegister implements OnInit, OnDestroy {
     });
   }
 
-  // ─── Row selection ─────────────────────────────────────────────
-
+  // ─── Row selection — fixed: selectAll toggles properly ────────
   public toggleRowSelection(index: number): void {
     if (this.selectedRows.has(index)) {
       this.selectedRows.delete(index);
@@ -376,24 +335,56 @@ export class OPDRegister implements OnInit, OnDestroy {
     }
   }
 
-  // ─── Filtering ─────────────────────────────────────────────────
+  public get allPageSelected(): boolean {
+    if (this.paginatedEntries.length === 0) return false;
+    return this.paginatedEntries.every((_, i) => {
+      const globalIndex = (this.currentPage - 1) * this.pageSize + i;
+      return this.selectedRows.has(globalIndex);
+    });
+  }
 
+  public toggleSelectAll(): void {
+    if (this.allPageSelected) {
+      this.paginatedEntries.forEach((_, i) => {
+        this.selectedRows.delete((this.currentPage - 1) * this.pageSize + i);
+      });
+    } else {
+      this.paginatedEntries.forEach((_, i) => {
+        this.selectedRows.add((this.currentPage - 1) * this.pageSize + i);
+      });
+    }
+  }
+
+  // ─── Filtering — fixed: department uses includes ───────────────
   public get filteredOpdRegister(): OPDRegisterEntry[] {
     return this.opdRegister.filter(entry => {
-      const matchesDate       = !this.filterDate       || entry.date.includes(this.filterDate);
-      const matchesDoctor     = !this.filterDoctor     || entry.doctor === this.filterDoctor;
-      const matchesDepartment = !this.filterDepartment || entry.department === this.filterDepartment;
+      const matchesDate       = !this.filterDate        || entry.date.includes(this.filterDate);
+      const matchesDoctor     = !this.filterDoctor      || entry.doctor === this.filterDoctor;
+      // Fixed: was strict === which never matched free-text input
+      const matchesDepartment = !this.filterDepartment  || entry.department.toLowerCase().includes(this.filterDepartment.toLowerCase());
       const matchesMalaria    = !this.filterMalariaTest || entry.malariaTest === this.filterMalariaTest;
-      const matchesName       = !this.filterPatientName
-        || entry.patientName.toLowerCase().includes(this.filterPatientName.toLowerCase());
-      const matchesDiagnosis  = !this.filterDiagnosis
-        || (entry.diagnosis ?? '').toLowerCase().includes(this.filterDiagnosis.toLowerCase());
+      const matchesName       = !this.filterPatientName || entry.patientName.toLowerCase().includes(this.filterPatientName.toLowerCase());
+      const matchesDiagnosis  = !this.filterDiagnosis   || (entry.diagnosis ?? '').toLowerCase().includes(this.filterDiagnosis.toLowerCase());
       return matchesDate && matchesDoctor && matchesDepartment && matchesMalaria && matchesName && matchesDiagnosis;
     });
   }
 
-  // ─── Pagination ────────────────────────────────────────────────
+  public get hasActiveFilters(): boolean {
+    return !!(this.filterDate || this.filterDoctor || this.filterDepartment ||
+              this.filterDiagnosis || this.filterMalariaTest || this.filterPatientName);
+  }
 
+  public clearFilters(): void {
+    this.filterDate        = '';
+    this.filterDoctor      = '';
+    this.filterDepartment  = '';
+    this.filterDiagnosis   = '';
+    this.filterMalariaTest = '';
+    this.filterPatientName = '';
+    this.currentPage       = 1;
+  }
+
+  // ─── Pagination ────────────────────────────────────────────────
   public get paginatedEntries(): OPDRegisterEntry[] {
     const start = (this.currentPage - 1) * this.pageSize;
     return this.filteredOpdRegister.slice(start, start + this.pageSize);
@@ -403,54 +394,52 @@ export class OPDRegister implements OnInit, OnDestroy {
     return Math.max(1, Math.ceil(this.filteredOpdRegister.length / this.pageSize));
   }
 
+  public get pageNumbers(): number[] {
+    const total = this.totalPages;
+    const cur   = this.currentPage;
+    const range: number[] = [];
+    for (let i = Math.max(1, cur - 2); i <= Math.min(total, cur + 2); i++) range.push(i);
+    return range;
+  }
+
   public goToPage(page: number): void {
-    if (page >= 1 && page <= this.totalPages) {
-      this.currentPage = page;
-    }
+    if (page >= 1 && page <= this.totalPages) this.currentPage = page;
   }
 
-  public changePageSize(): void {
-    this.currentPage = 1;
-  }
+  public changePageSize(): void { this.currentPage = 1; }
 
-  public trackByIndex(index: number): number {
-    return index;
-  }
+  public trackByIndex(index: number): number { return index; }
 
-  // ─── Doctor selection helper ───────────────────────────────────
-
+  // ─── Doctor selection ──────────────────────────────────────────
   public onDoctorChange(username: string, target: OPDRegisterEntry): void {
-    const found = this.doctors.find(d => d.username === username);
+    const found     = this.doctors.find(d => d.username === username);
     target.doctor   = username;
     target.doctorId = found?.id ?? '';
   }
 
   // ─── Export ────────────────────────────────────────────────────
-
   public exportToCsv(): void {
     const headers = [
-      'OPD No', 'Reg No', 'Date', 'Patient Name', 'Age', 'Sex', 'Client Category', 'Contact', 'Address',
-      'Complaint', 'Diagnosis', 'Treatment', 'Department', 'Doctor', 'Malaria Test', 'TB Screen',
-      'Palliative Care', 'Alcohol Use', 'Referred From', 'Notes',
+      'OPD No','Reg No','Date','Patient Name','Age','Sex','Client Category','Contact','Address',
+      'Complaint','Diagnosis','Treatment','Department','Doctor','Malaria Test','TB Screen',
+      'Palliative Care','Alcohol Use','Referred From','Notes',
     ];
     const rows = this.filteredOpdRegister.map(e => [
       e.opdNo, e.regNo, e.date, e.patientName, e.age, e.sex, e.clientCategory,
       e.contact, e.address, e.complaint, e.diagnosis, e.treatment, e.department,
-      e.doctor, e.malariaTest, e.tbScreen, e.palliativeCare, e.alcoholUse,
-      e.referredFrom, e.notes,
+      e.doctor, e.malariaTest, e.tbScreen, e.palliativeCare, e.alcoholUse, e.referredFrom, e.notes,
     ]);
     const csv = [headers, ...rows].map(r => r.map(f => `"${f ?? ''}"`).join(',')).join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'opd_register_filtered.csv';
+    const url  = window.URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href     = url;
+    a.download = `opd_register_${new Date().toISOString().slice(0, 10)}.csv`;
     a.click();
     window.URL.revokeObjectURL(url);
   }
 
   // ─── Helpers ───────────────────────────────────────────────────
-
   private blankEntry(): OPDRegisterEntry {
     return {
       opdNo: '', regNo: '',

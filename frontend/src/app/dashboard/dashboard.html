@@ -1,153 +1,304 @@
 <div class="dashboard-container">
+
+  <!-- Header -->
   <header class="dashboard-header">
-    
-    <div class="header-text">
-      <h1>Welcome back, {{ username }}!</h1>
+    <div class="header-content">
+      <div class="header-left">
+        <p class="header-greeting">{{ greeting }},</p>
+        <h1>{{ username }}</h1>
+        <p class="header-date">{{ today }}</p>
+      </div>
+      <div class="header-right">
+        <span class="role-badge" *ngIf="roleLabel">{{ roleLabel }}</span>
+      </div>
     </div>
   </header>
 
   <div class="dashboard-content">
+
+    <!-- Error banner -->
+    <div class="banner-error" role="alert" aria-live="polite" *ngIf="errorMessage">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/>
+        <line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
+      <span>{{ errorMessage }}</span>
+      <button class="btn-retry" (click)="refreshAllStats()">Retry</button>
+    </div>
+
     <!-- Quick Stats Overview -->
     <div class="stats-overview">
-      <div class="stat-card">
-        <div class="stat-icon patients-icon">👥</div>
-        <div class="stat-info">
-          <span class="stat-label">Patients</span>
-          <span class="stat-value">{{ stats.patients }}</span>
+
+      <div class="stat-card stat-patients">
+        <div class="stat-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+            <circle cx="9" cy="7" r="4"/>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+          </svg>
         </div>
-        <div class="stat-chart">📈</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-icon doctors-icon">👨‍⚕️</div>
         <div class="stat-info">
-          <span class="stat-label">Doctors</span>
-          <span class="stat-value">{{ stats.doctors }}</span>
+          <span class="stat-label">Total Patients</span>
+          <span class="stat-value" [class.loading-pulse]="isLoading">{{ stats.patients }}</span>
         </div>
-        <div class="stat-chart">📊</div>
       </div>
-      <div class="stat-card">
-        <div class="stat-icon services-icon">🏥</div>
+
+      <div class="stat-card stat-doctors">
+        <div class="stat-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+            <circle cx="12" cy="7" r="4"/>
+            <path d="M12 11v4M10 13h4"/>
+          </svg>
+        </div>
+        <div class="stat-info">
+          <span class="stat-label">Active Doctors</span>
+          <span class="stat-value" [class.loading-pulse]="isLoading">{{ stats.doctors }}</span>
+        </div>
+      </div>
+
+      <div class="stat-card stat-services">
+        <div class="stat-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 2a10 10 0 1 0 0 20A10 10 0 0 0 12 2z"/>
+            <path d="M12 8v4M12 16h.01"/>
+          </svg>
+        </div>
         <div class="stat-info">
           <span class="stat-label">Services</span>
           <span class="stat-value">{{ stats.services }}</span>
         </div>
-        <div class="stat-chart">📋</div>
       </div>
-      <div class="stat-card">
-        <div class="stat-icon reports-icon">📑</div>
+
+      <div class="stat-card stat-reports">
+        <div class="stat-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="16" y1="13" x2="8" y2="13"/>
+            <line x1="16" y1="17" x2="8" y2="17"/>
+            <polyline points="10 9 9 9 8 9"/>
+          </svg>
+        </div>
         <div class="stat-info">
           <span class="stat-label">Reports</span>
           <span class="stat-value">{{ stats.reports }}</span>
         </div>
-        <div class="stat-chart">📉</div>
       </div>
+
     </div>
 
     <!-- Disease Statistics Section -->
     <section class="disease-section">
       <div class="section-head">
-        <h2>Disease Statistics</h2>
-        <p>Current patient disease distribution</p>
-        <button class="btn btn-refresh" type="button" (click)="refreshAllStats()">Refresh</button>
+        <div class="section-head-text">
+          <h2>Disease Statistics</h2>
+          <p>Current patient disease distribution</p>
+        </div>
+        <button
+          class="btn btn-refresh"
+          type="button"
+          [disabled]="isLoading"
+          (click)="refreshAllStats()"
+        >
+          <svg class="refresh-icon" [class.spinning]="isLoading" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <polyline points="23 4 23 10 17 10"/>
+            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+          </svg>
+          {{ isLoading ? 'Loading…' : 'Refresh' }}
+        </button>
       </div>
+
       <div class="chart-row">
         <div class="pie-card">
           <h3>Disease Distribution</h3>
           <div class="pie-wrapper" *ngIf="getTopDiseaseCounts().length; else noData">
             <div class="pie" [style.background]="generatePieGradient(getTopDiseaseCounts())"></div>
-            <div class="pie-center">{{ stats.patients }}<span>Patients</span></div>
+            <div class="pie-center">
+              {{ stats.patients }}
+              <span>Patients</span>
+            </div>
           </div>
-          <ng-template #noData><p class="empty">No disease data available.</p></ng-template>
+          <!-- Pie legend -->
+          <div class="pie-legend" *ngIf="getTopDiseaseCounts().length">
+            <div class="legend-item" *ngFor="let item of getTopDiseaseCounts(); let i = index">
+              <span class="legend-dot" [attr.data-index]="i"></span>
+              <span class="legend-name">{{ item.disease }}</span>
+              <span class="legend-pct">{{ item.percent | number:'1.0-0' }}%</span>
+            </div>
+          </div>
+          <ng-template #noData>
+            <p class="empty" *ngIf="!isLoading">No disease data available.</p>
+            <p class="empty" *ngIf="isLoading">
+              <span class="mini-loader"></span> Loading…
+            </p>
+          </ng-template>
         </div>
 
         <div class="bar-card">
           <h3>Top Disease Cases</h3>
           <div class="bar-item" *ngFor="let item of getTopDiseaseCounts()">
-            <div class="bar-header"><span>{{ item.disease }}</span><strong>{{ item.count }} patients</strong></div>
-            <div class="bar-track"><div class="bar-fill" [style.width.%]="item.percent"></div></div>
+            <div class="bar-header">
+              <span>{{ item.disease }}</span>
+              <strong>{{ item.count }} patient{{ item.count === 1 ? '' : 's' }}</strong>
+            </div>
+            <div class="bar-track">
+              <div class="bar-fill" [style.width.%]="item.percent"></div>
+            </div>
+            <span class="bar-pct">{{ item.percent | number:'1.0-0' }}%</span>
           </div>
+          <p class="empty" *ngIf="!getTopDiseaseCounts().length && !isLoading">No disease data available.</p>
+          <p class="empty" *ngIf="isLoading && !getTopDiseaseCounts().length">
+            <span class="mini-loader"></span> Loading…
+          </p>
         </div>
       </div>
     </section>
 
     <!-- Main Dashboard Tiles -->
     <div class="dashboard-tiles">
+
       <div class="tile tile--reports">
         <a routerLink="/reports">
-          <div class="tile-icon">📊</div>
-          <h2>REPORTS</h2>
-          <p>Generate and view various system reports</p>
+          <div class="tile-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+              <line x1="16" y1="13" x2="8" y2="13"/>
+              <line x1="16" y1="17" x2="8" y2="17"/>
+            </svg>
+          </div>
+          <div class="tile-body">
+            <h2>Reports</h2>
+            <p>Generate and view various system reports</p>
+          </div>
+          <div class="tile-arrow">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="5" y1="12" x2="19" y2="12"/>
+              <polyline points="12 5 19 12 12 19"/>
+            </svg>
+          </div>
         </a>
       </div>
 
       <div class="tile tile--patients">
         <a routerLink="/register">
-          <div class="tile-icon">➕</div>
-          <h2>PATIENT REGISTRATION</h2>
-          <p>Add new patients and manage profiles</p>
+          <div class="tile-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+              <circle cx="9" cy="7" r="4"/>
+              <line x1="19" y1="8" x2="19" y2="14"/>
+              <line x1="22" y1="11" x2="16" y2="11"/>
+            </svg>
+          </div>
+          <div class="tile-body">
+            <h2>Register Patient</h2>
+            <p>Add new patients and manage profiles</p>
+          </div>
+          <div class="tile-arrow">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="5" y1="12" x2="19" y2="12"/>
+              <polyline points="12 5 19 12 12 19"/>
+            </svg>
+          </div>
         </a>
       </div>
 
       <div class="tile tile--services">
         <a routerLink="/services">
-          <div class="tile-icon">🎯</div>
-          <h2>SERVICES OFFERED</h2>
-          <p>View and manage all hospital services</p>
+          <div class="tile-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+              <polyline points="22 4 12 14.01 9 11.01"/>
+            </svg>
+          </div>
+          <div class="tile-body">
+            <h2>Services</h2>
+            <p>View and manage all hospital services</p>
+          </div>
+          <div class="tile-arrow">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="5" y1="12" x2="19" y2="12"/>
+              <polyline points="12 5 19 12 12 19"/>
+            </svg>
+          </div>
         </a>
       </div>
 
       <div class="tile tile--opd">
         <a routerLink="/opd">
-          <div class="tile-icon">✓</div>
-          <h2>OPD REGISTER</h2>
-          <p>Out-Patient Department records</p>
+          <div class="tile-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+              <polyline points="9 22 9 12 15 12 15 22"/>
+            </svg>
+          </div>
+          <div class="tile-body">
+            <h2>OPD Register</h2>
+            <p>Out-Patient Department records</p>
+          </div>
+          <div class="tile-arrow">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="5" y1="12" x2="19" y2="12"/>
+              <polyline points="12 5 19 12 12 19"/>
+            </svg>
+          </div>
         </a>
       </div>
-    </div>
 
-    <!-- Secondary Tiles -->
-    <div class="secondary-tiles">
       <div class="tile tile--doctors">
         <a routerLink="/doctors">
-          <div class="tile-icon">🔒</div>
-          <h2>DOCTORS</h2>
-          <p>Manage doctor availability and schedules</p>
+          <div class="tile-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+              <circle cx="12" cy="7" r="4"/>
+            </svg>
+          </div>
+          <div class="tile-body">
+            <h2>Doctors</h2>
+            <p>Manage doctor availability and schedules</p>
+          </div>
+          <div class="tile-arrow">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="5" y1="12" x2="19" y2="12"/>
+              <polyline points="12 5 19 12 12 19"/>
+            </svg>
+          </div>
         </a>
       </div>
 
       <div class="tile tile--lists">
         <a routerLink="/patients">
-          <div class="tile-icon">📝</div>
-          <h2>PATIENT LISTS</h2>
-          <p>Browse and search active patient records</p>
+          <div class="tile-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="8" y1="6" x2="21" y2="6"/>
+              <line x1="8" y1="12" x2="21" y2="12"/>
+              <line x1="8" y1="18" x2="21" y2="18"/>
+              <line x1="3" y1="6" x2="3.01" y2="6"/>
+              <line x1="3" y1="12" x2="3.01" y2="12"/>
+              <line x1="3" y1="18" x2="3.01" y2="18"/>
+            </svg>
+          </div>
+          <div class="tile-body">
+            <h2>Patient Lists</h2>
+            <p>Browse and search active patient records</p>
+          </div>
+          <div class="tile-arrow">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="5" y1="12" x2="19" y2="12"/>
+              <polyline points="12 5 19 12 12 19"/>
+            </svg>
+          </div>
         </a>
       </div>
 
-      <div class="tile tile--stats">
-        <div class="stat-head">
-          <h2>STATISTICS</h2>
-          <span class="chip">Live</span>
-        </div>
-        <div class="stat-values">
-          <div class="stat-item"><span class="label">Patients</span><strong>{{ stats.patients }}</strong></div>
-          <div class="stat-item"><span class="label">Doctors</span><strong>{{ stats.doctors }}</strong></div>
-          <div class="stat-item"><span class="label">Services</span><strong>{{ stats.services }}</strong></div>
-          <div class="stat-item"><span class="label">Reports</span><strong>{{ stats.reports }}</strong></div>
-        </div>
-        <div class="disease-mini">
-          <h3>Top Diseases</h3>
-          <div *ngFor="let item of getDiseaseCounts().slice(0, 3)" class="disease-row">
-            <span>{{ item.disease }}</span>
-            <small>{{ item.count }} patients</small>
-          </div>
-        </div>
-        <a routerLink="/patients" class="view-link">View detailed statistics</a>
-      </div>
     </div>
+
   </div>
 
   <footer class="dashboard-footer">
-    <p>&copy; 2024 Bugembe Health Center IV. All rights reserved.</p>
+    <p>&copy; {{ currentYear }} Bugembe Health Center IV. All rights reserved.</p>
   </footer>
-</div>
 
+</div>

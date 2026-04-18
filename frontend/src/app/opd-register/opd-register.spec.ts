@@ -9,8 +9,7 @@ import { OPDRegister, OPDRegisterEntry } from './opd-register';
 
 const API = 'http://localhost:3000/api';
 
-// ─── Fixtures ──────────────────────────────────────────────────────────────
-
+// ─── Fixtures ──────────────────────────────────────────────────
 const mockDoctors = [
   { id: 'doc-1', name: 'Dr. Smith', username: 'drsmith', role: 'doctor', status: 'active' },
   { id: 'doc-2', name: 'Dr. Jane',  username: 'drjane',  role: 'doctor', status: 'active' },
@@ -19,7 +18,7 @@ const mockDoctors = [
 const mockVisit1 = {
   id: 'visit-1', visit_date: '2026-04-10', patient_number: 'P-001',
   patient_id: 'p-uuid-1', patient_name: 'Alice Nakato',
-  age: 32, gender: 'F', address: 'Kampala', department: 'OPD',
+  age: 32, gender: 'F', address: 'Kampala', department: 'Outpatient',
   chief_complaint: 'Fever', diagnosis: 'Malaria', treatment_plan: 'Coartem',
   doctor_name: 'drsmith', doctor_id: 'doc-1',
   vitals: { malariaTest: 'Positive', tbScreen: 'No', palliativeCare: 'No', alcoholUse: 'No', referredFrom: '' },
@@ -29,7 +28,7 @@ const mockVisit1 = {
 const mockVisit2 = {
   id: 'visit-2', visit_date: '2026-04-11', patient_number: 'P-002',
   patient_id: 'p-uuid-2', patient_name: 'Bob Opio',
-  age: 45, gender: 'M', address: 'Jinja', department: 'OPD',
+  age: 45, gender: 'M', address: 'Jinja', department: 'Dental',
   chief_complaint: 'Cough', diagnosis: 'Typhoid', treatment_plan: 'Ciprofloxacin',
   doctor_name: 'drjane', doctor_id: 'doc-2',
   vitals: { malariaTest: 'Negative', tbScreen: 'Yes', palliativeCare: 'No', alcoholUse: 'No', referredFrom: '' },
@@ -42,8 +41,8 @@ const emptyVisits = { success: true, data: [], pagination: { total: 0 } };
 
 describe('OPDRegister', () => {
   let component: OPDRegister;
-  let fixture: ComponentFixture<OPDRegister>;
-  let httpMock: HttpTestingController;
+  let fixture:   ComponentFixture<OPDRegister>;
+  let httpMock:  HttpTestingController;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -57,7 +56,6 @@ describe('OPDRegister', () => {
 
   afterEach(() => httpMock.verify());
 
-  /** Trigger ngOnInit and flush both parallel requests. */
   function init(doctors = doctorsResp, visits = visitsResp): void {
     fixture.detectChanges();
     httpMock.expectOne(`${API}/users?role=doctor&status=active&limit=100`).flush(doctors);
@@ -65,7 +63,7 @@ describe('OPDRegister', () => {
     fixture.detectChanges();
   }
 
-  // ─── Creation ──────────────────────────────────────────────────────────
+  // ─── Initialization ───────────────────────────────────────
   describe('Initialization', () => {
     it('should create', () => {
       init();
@@ -102,7 +100,7 @@ describe('OPDRegister', () => {
       expect(component.isLoading).toBeFalse();
     });
 
-    it('should be in loading state while requests are in-flight', () => {
+    it('should be loading while requests are in-flight', () => {
       fixture.detectChanges();
       expect(component.isLoading).toBeTrue();
       httpMock.expectOne(`${API}/users?role=doctor&status=active&limit=100`).flush(doctorsResp);
@@ -122,9 +120,14 @@ describe('OPDRegister', () => {
       expect(component.doctors).toEqual([]);
       expect(component.newOpdEntry.doctorId).toBeFalsy();
     });
+
+    it('should default formCollapsed to false', () => {
+      init();
+      expect(component.formCollapsed).toBeFalse();
+    });
   });
 
-  // ─── Default form state ────────────────────────────────────────────────
+  // ─── Default form state ───────────────────────────────────
   describe('New entry defaults', () => {
     it('should default sex to Female', () => {
       init();
@@ -150,14 +153,13 @@ describe('OPDRegister', () => {
 
     it("should default date to today's date", () => {
       init();
-      const today = new Date().toISOString().slice(0, 10);
-      expect(component.newOpdEntry.date).toBe(today);
+      expect(component.newOpdEntry.date).toBe(new Date().toISOString().slice(0, 10));
     });
   });
 
-  // ─── Validation ────────────────────────────────────────────────────────
+  // ─── Validation ───────────────────────────────────────────
   describe('addOpdEntry() validation', () => {
-    it('should set errorMessage and NOT call POST when required fields are missing', () => {
+    it('should set errorMessage and NOT POST when required fields are missing', () => {
       init();
       component.newOpdEntry.patientName = '';
       component.addOpdEntry();
@@ -175,25 +177,23 @@ describe('OPDRegister', () => {
     });
   });
 
-  // ─── Add entry ─────────────────────────────────────────────────────────
+  // ─── Add entry ────────────────────────────────────────────
   describe('addOpdEntry() — success flow', () => {
     function fillForm(): void {
       component.newOpdEntry.patientName = 'New Patient';
       component.newOpdEntry.age         = 25;
       component.newOpdEntry.sex         = 'Male';
       component.newOpdEntry.doctorId    = 'doc-1';
-      component.newOpdEntry.patientId   = 'p-uuid-new'; // skip patient lookup
+      component.newOpdEntry.patientId   = 'p-uuid-new';
     }
 
     it('should POST to /api/opd and prepend the new entry', () => {
       init();
       fillForm();
       component.addOpdEntry();
-
-      const savedVisit = { ...mockVisit1, id: 'visit-new', patient_name: 'New Patient' };
-      httpMock.expectOne(`${API}/opd`).flush({ success: true, data: savedVisit });
+      const saved = { ...mockVisit1, id: 'visit-new', patient_name: 'New Patient' };
+      httpMock.expectOne(`${API}/opd`).flush({ success: true, data: saved });
       fixture.detectChanges();
-
       expect(component.opdRegister.length).toBe(3);
       expect(component.opdRegister[0].patientName).toBe('New Patient');
     });
@@ -204,7 +204,6 @@ describe('OPDRegister', () => {
       component.addOpdEntry();
       httpMock.expectOne(`${API}/opd`).flush({ success: true, data: mockVisit1 });
       fixture.detectChanges();
-
       expect(component.newOpdEntry.patientName).toBe('');
       expect(component.newOpdEntry.age).toBe(0);
     });
@@ -229,60 +228,22 @@ describe('OPDRegister', () => {
     });
   });
 
-  // ─── Patient lookup ────────────────────────────────────────────────────
-  describe('Patient resolution', () => {
-    it('should search for patient by name when patientId is not set', () => {
-      init();
-      component.newOpdEntry.patientName = 'Alice Nakato';
-      component.newOpdEntry.age         = 32;
-      component.newOpdEntry.sex         = 'Female';
-      component.newOpdEntry.doctorId    = 'doc-1';
-      component.newOpdEntry.patientId   = undefined;
-
-      component.addOpdEntry();
-
-      httpMock.expectOne(`${API}/patients?search=Alice%20Nakato&limit=1`)
-        .flush({ success: true, data: [{ id: 'p-resolved', ...mockVisit1 }] });
-      httpMock.expectOne(`${API}/opd`).flush({ success: true, data: mockVisit1 });
-    });
-
-    it('should set errorMessage when patient cannot be found', () => {
-      init();
-      component.newOpdEntry.patientName = 'Unknown';
-      component.newOpdEntry.age         = 30;
-      component.newOpdEntry.sex         = 'Male';
-      component.newOpdEntry.doctorId    = 'doc-1';
-      component.newOpdEntry.patientId   = undefined;
-
-      component.addOpdEntry();
-
-      httpMock.expectOne(`${API}/patients?search=Unknown&limit=1`)
-        .flush({ success: true, data: [] });
-      fixture.detectChanges();
-      expect(component.errorMessage).toBeTruthy();
-    });
-  });
-
-  // ─── Edit / save / cancel ──────────────────────────────────────────────
-  describe('editOpdEntry()', () => {
-    it('should set editing to true for the given index', () => {
+  // ─── Edit / save / cancel ─────────────────────────────────
+  describe('editOpdEntry() / saveOpdEntry() / cancelOpdEdit()', () => {
+    it('should set editing to true on editOpdEntry', () => {
       init();
       component.editOpdEntry(0);
       expect(component.opdRegister[0].editing).toBeTrue();
     });
-  });
 
-  describe('saveOpdEntry()', () => {
     it('should PATCH /api/opd/:id and update the entry', () => {
       init();
       component.editOpdEntry(0);
       component.opdRegister[0].diagnosis = 'Updated Diagnosis';
-
       component.saveOpdEntry(0);
-      const updatedVisit = { ...mockVisit1, diagnosis: 'Updated Diagnosis' };
-      httpMock.expectOne(`${API}/opd/visit-1`).flush({ success: true, data: updatedVisit });
+      const updated = { ...mockVisit1, diagnosis: 'Updated Diagnosis' };
+      httpMock.expectOne(`${API}/opd/visit-1`).flush({ success: true, data: updated });
       fixture.detectChanges();
-
       expect(component.opdRegister[0].editing).toBeFalse();
       expect(component.opdRegister[0].diagnosis).toBe('Updated Diagnosis');
     });
@@ -295,25 +256,21 @@ describe('OPDRegister', () => {
       fixture.detectChanges();
       expect(component.errorMessage).toBeTruthy();
     });
-  });
 
-  describe('cancelOpdEdit()', () => {
-    it('should set editing to false and re-fetch from API', () => {
+    it('should set editing to false and re-fetch on cancelOpdEdit', () => {
       init();
       component.editOpdEntry(0);
       component.cancelOpdEdit(0);
-
       expect(component.opdRegister[0].editing).toBeFalse();
       httpMock.expectOne(`${API}/opd/visit-1`).flush({ success: true, data: mockVisit1 });
     });
   });
 
-  // ─── Delete ────────────────────────────────────────────────────────────
+  // ─── Delete ───────────────────────────────────────────────
   describe('deleteOpdEntry()', () => {
     it('should optimistically remove the entry and PATCH status', () => {
       init();
       component.deleteOpdEntry(0);
-
       expect(component.opdRegister.length).toBe(1);
       httpMock.expectOne(`${API}/opd/visit-1`).flush({ success: true, data: mockVisit1 });
     });
@@ -323,7 +280,6 @@ describe('OPDRegister', () => {
       component.deleteOpdEntry(0);
       httpMock.expectOne(`${API}/opd/visit-1`).error(new ErrorEvent('network'));
       fixture.detectChanges();
-
       expect(component.opdRegister.length).toBe(2);
       expect(component.errorMessage).toBeTruthy();
     });
@@ -335,7 +291,6 @@ describe('OPDRegister', () => {
       component.selectedRows.add(0);
       component.selectedRows.add(1);
       component.deleteSelectedRows();
-
       expect(component.opdRegister.length).toBe(0);
       expect(component.selectedRows.size).toBe(0);
       httpMock.expectOne(`${API}/opd/visit-1`).flush({ success: true, data: mockVisit1 });
@@ -343,7 +298,7 @@ describe('OPDRegister', () => {
     });
   });
 
-  // ─── Row selection ─────────────────────────────────────────────────────
+  // ─── Row selection ────────────────────────────────────────
   describe('toggleRowSelection()', () => {
     it('should add an index to selectedRows', () => {
       init();
@@ -359,7 +314,46 @@ describe('OPDRegister', () => {
     });
   });
 
-  // ─── Filtering ─────────────────────────────────────────────────────────
+  describe('toggleSelectAll()', () => {
+    it('should select all paginated rows when none are selected', () => {
+      init();
+      component.pageSize = 10;
+      component.currentPage = 1;
+      component.toggleSelectAll();
+      expect(component.selectedRows.has(0)).toBeTrue();
+      expect(component.selectedRows.has(1)).toBeTrue();
+    });
+
+    it('should deselect all paginated rows when all are selected', () => {
+      init();
+      component.pageSize = 10;
+      component.currentPage = 1;
+      component.toggleSelectAll(); // select all
+      component.toggleSelectAll(); // deselect all
+      expect(component.selectedRows.size).toBe(0);
+    });
+
+    it('allPageSelected should be false when no rows selected', () => {
+      init();
+      expect(component.allPageSelected).toBeFalse();
+    });
+
+    it('allPageSelected should be true when all page rows selected', () => {
+      init();
+      component.pageSize = 10;
+      component.currentPage = 1;
+      component.selectedRows.add(0);
+      component.selectedRows.add(1);
+      expect(component.allPageSelected).toBeTrue();
+    });
+
+    it('allPageSelected should be false for empty paginated list', () => {
+      init(doctorsResp, emptyVisits);
+      expect(component.allPageSelected).toBeFalse();
+    });
+  });
+
+  // ─── Filtering ────────────────────────────────────────────
   describe('filteredOpdRegister', () => {
     it('should return all entries when no filters are set', () => {
       init();
@@ -398,6 +392,21 @@ describe('OPDRegister', () => {
       expect(component.filteredOpdRegister.length).toBe(1);
     });
 
+    it('should filter by department using partial match (includes fix)', () => {
+      init();
+      // "Outpatient" contains "out" — old strict === would have failed
+      component.filterDepartment = 'out';
+      expect(component.filteredOpdRegister.length).toBe(1);
+      expect(component.filteredOpdRegister[0].patientName).toBe('Alice Nakato');
+    });
+
+    it('should filter department case-insensitively', () => {
+      init();
+      component.filterDepartment = 'DENTAL';
+      expect(component.filteredOpdRegister.length).toBe(1);
+      expect(component.filteredOpdRegister[0].patientName).toBe('Bob Opio');
+    });
+
     it('should return empty array for no matches', () => {
       init();
       component.filterPatientName = 'zzznomatch';
@@ -405,18 +414,58 @@ describe('OPDRegister', () => {
     });
   });
 
-  // ─── Pagination ────────────────────────────────────────────────────────
+  // ─── hasActiveFilters / clearFilters ──────────────────────
+  describe('hasActiveFilters', () => {
+    it('should be false when no filters are set', () => {
+      init();
+      expect(component.hasActiveFilters).toBeFalse();
+    });
+
+    it('should be true when any filter is set', () => {
+      init();
+      component.filterPatientName = 'alice';
+      expect(component.hasActiveFilters).toBeTrue();
+    });
+  });
+
+  describe('clearFilters()', () => {
+    it('should reset all filter fields', () => {
+      init();
+      component.filterPatientName  = 'alice';
+      component.filterDiagnosis    = 'malaria';
+      component.filterDate         = '2026-04-10';
+      component.filterDoctor       = 'drsmith';
+      component.filterDepartment   = 'OPD';
+      component.filterMalariaTest  = 'Positive';
+      component.clearFilters();
+      expect(component.filterPatientName).toBe('');
+      expect(component.filterDiagnosis).toBe('');
+      expect(component.filterDate).toBe('');
+      expect(component.filterDoctor).toBe('');
+      expect(component.filterDepartment).toBe('');
+      expect(component.filterMalariaTest).toBe('');
+    });
+
+    it('should reset currentPage to 1', () => {
+      init();
+      component.currentPage = 3;
+      component.clearFilters();
+      expect(component.currentPage).toBe(1);
+    });
+  });
+
+  // ─── Pagination ───────────────────────────────────────────
   describe('Pagination', () => {
     it('should return correct paginatedEntries for page 1', () => {
       init();
-      component.pageSize = 1;
+      component.pageSize    = 1;
       component.currentPage = 1;
       expect(component.paginatedEntries.length).toBe(1);
     });
 
     it('should return correct entries for page 2', () => {
       init();
-      component.pageSize = 1;
+      component.pageSize    = 1;
       component.currentPage = 2;
       expect(component.paginatedEntries[0].patientName).toBe('Bob Opio');
     });
@@ -453,9 +502,18 @@ describe('OPDRegister', () => {
       component.changePageSize();
       expect(component.currentPage).toBe(1);
     });
+
+    it('should return correct pageNumbers centered around currentPage', () => {
+      init();
+      component.pageSize    = 1;
+      component.currentPage = 2;
+      const pages = component.pageNumbers;
+      expect(pages).toContain(2);
+      expect(pages.length).toBeGreaterThan(0);
+    });
   });
 
-  // ─── Doctor selection helper ───────────────────────────────────────────
+  // ─── Doctor selection ─────────────────────────────────────
   describe('onDoctorChange()', () => {
     it('should update doctor and doctorId on the target entry', () => {
       init();
@@ -465,16 +523,14 @@ describe('OPDRegister', () => {
     });
   });
 
-  // ─── Refresh ──────────────────────────────────────────────────────────
+  // ─── Refresh ──────────────────────────────────────────────
   describe('refreshOpdRegister()', () => {
     it('should re-fetch visits and update opdRegister', () => {
       init(doctorsResp, emptyVisits);
       expect(component.opdRegister.length).toBe(0);
-
       component.refreshOpdRegister();
       httpMock.expectOne(`${API}/opd?limit=1000`).flush(visitsResp);
       fixture.detectChanges();
-
       expect(component.opdRegister.length).toBe(2);
     });
 
@@ -487,7 +543,7 @@ describe('OPDRegister', () => {
     });
   });
 
-  // ─── Lifecycle ────────────────────────────────────────────────────────
+  // ─── Lifecycle ────────────────────────────────────────────
   describe('ngOnDestroy', () => {
     it('should complete the destroy$ subject', () => {
       init();

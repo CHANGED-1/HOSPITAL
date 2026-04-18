@@ -2,198 +2,275 @@
 
   <!-- PAGE HEADER -->
   <header class="page-header">
-    <h1>OPD Register</h1>
-    <p>Out-Patient Department register for patient visits and treatments.</p>
-  </header>
-
-  <!-- Status banners -->
-  <div class="banner banner-error" role="alert" *ngIf="errorMessage">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-    {{ errorMessage }}
-  </div>
-  <div class="banner banner-success" role="status" *ngIf="successMessage">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
-    {{ successMessage }}
-  </div>
-
-  <section class="form-section">
-    <h2>Add OPD Entry</h2>
-
-    <div class="form-group-section basic-info">
-      <h3>Basic Info</h3>
-      <div class="basic-info-grid">
-        <div class="basic-info-item">
-          <label>Date</label>
-          <input type="date" [(ngModel)]="newOpdEntry.date" />
-        </div>
-        <div class="basic-info-item">
-          <label>OPD No <span>(auto)</span></label>
-          <input type="text" [(ngModel)]="newOpdEntry.opdNo" readonly placeholder="(auto)" />
-        </div>
-        <div class="basic-info-item">
-          <label>Reg No <span>(auto)</span></label>
-          <input type="text" [(ngModel)]="newOpdEntry.regNo" readonly placeholder="(auto)" />
-        </div>
-      </div>
+    <div class="header-text">
+      <h1>OPD Register</h1>
+      <p>Out-Patient Department register for patient visits and treatments.</p>
     </div>
-
-    <div class="split-grid">
-      <div class="form-group-section">
-        <h3>Patient Details</h3>
-        <div class="form-row patient-row">
-          <div class="form-field">
-            <label>Patient Name *</label>
-            <input type="text" [(ngModel)]="newOpdEntry.patientName" placeholder="Enter patient name" />
-          </div>
-          <div class="form-field">
-            <label>Age *</label>
-            <input type="number" [(ngModel)]="newOpdEntry.age" placeholder="e.g. 35" />
-          </div>
-          <div class="form-field">
-            <label>Sex *</label>
-            <select [(ngModel)]="newOpdEntry.sex">
-              <option>Female</option>
-              <option>Male</option>
-              <option>Other</option>
-            </select>
-          </div>
-          <div class="form-field">
-            <label>Weight (kg)</label>
-            <input type="text" [(ngModel)]="newOpdEntry.weight" placeholder="e.g. 65" />
-          </div>
-          <div class="form-field">
-            <label>Height (cm)</label>
-            <input type="text" [(ngModel)]="newOpdEntry.height" placeholder="e.g. 172" />
-          </div>
-          <div class="form-field">
-            <label>Contact</label>
-            <input type="text" [(ngModel)]="newOpdEntry.contact" placeholder="Phone or mobile number" />
-          </div>
-          <div class="form-field">
-            <label>Address</label>
-            <input type="text" [(ngModel)]="newOpdEntry.address" placeholder="House, Street, City" />
-          </div>
-          <div class="form-field">
-            <label>Client Category</label>
-            <select [(ngModel)]="newOpdEntry.clientCategory">
-              <option>General</option>
-              <option>Emergency</option>
-              <option>Referral</option>
-            </select>
-          </div>
-          <div class="form-field">
-            <label>Referred From</label>
-            <input type="text" [(ngModel)]="newOpdEntry.referredFrom" placeholder="Optional" />
-          </div>
-        </div>
-      </div>
-
-      <div class="form-group-section">
-        <h3>Visit Details</h3>
-        <div class="form-row visit-row">
-          <div class="form-field">
-            <label>Department</label>
-            <input type="text" [(ngModel)]="newOpdEntry.department" placeholder="Select department" />
-          </div>
-          <div class="form-field">
-            <label>Doctor *</label>
-            <select [ngModel]="newOpdEntry.doctor" (ngModelChange)="onDoctorChange($event, newOpdEntry)">
-              <option value="" disabled>Select doctor</option>
-              <option *ngFor="let d of doctors" [value]="d.username">{{ d.name }}</option>
-            </select>
-          </div>
-          <div class="form-field">
-            <label>Complaint</label>
-            <input type="text" [(ngModel)]="newOpdEntry.complaint" placeholder="Enter main complaint" />
-          </div>
-          <div class="form-field">
-            <label>Diagnosis</label>
-            <input type="text" [(ngModel)]="newOpdEntry.diagnosis" placeholder="Enter diagnosis/findings" />
-          </div>
-          <div class="form-field">
-            <label>Treatment</label>
-            <input type="text" [(ngModel)]="newOpdEntry.treatment" placeholder="Treatment / prescription" />
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="form-group-section">
-      <h3>Screening</h3>
-      <div class="form-row">
-        <div class="form-field">
-          <label>Malaria Test</label>
-          <select [(ngModel)]="newOpdEntry.malariaTest">
-            <option>Not done</option>
-            <option>Positive</option>
-            <option>Negative</option>
-          </select>
-        </div>
-        <div class="form-field">
-          <label>TB Screen</label>
-          <select [(ngModel)]="newOpdEntry.tbScreen">
-            <option>No</option>
-            <option>Yes</option>
-          </select>
-        </div>
-        <div class="form-field">
-          <label>Palliative Care</label>
-          <select [(ngModel)]="newOpdEntry.palliativeCare">
-            <option>No</option>
-            <option>Yes</option>
-          </select>
-        </div>
-        <div class="form-field">
-          <label>Alcohol Use</label>
-          <select [(ngModel)]="newOpdEntry.alcoholUse">
-            <option>No</option>
-            <option>Yes</option>
-          </select>
-        </div>
-      </div>
-    </div>
-
-    <div class="actions-row">
-      <button type="button" (click)="addOpdEntry()" [disabled]="isSaving">
-        {{ isSaving ? 'Saving…' : 'Add OPD Entry' }}
+    <div class="header-actions">
+      <button type="button" class="btn-header btn-export" (click)="exportToCsv()" title="Export filtered records to CSV">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="7 10 12 15 17 10"/>
+          <line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        Export CSV
       </button>
-      <button type="button" class="ipd-redirect" routerLink="/ipd">Go to IPD Register</button>
-      <button type="button" (click)="exportToCsv()">Export to CSV</button>
-      <button type="button" (click)="refreshOpdRegister()" [disabled]="isLoading">
+      <a class="btn-header btn-ipd" routerLink="/ipd">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M5 12h14M12 5l7 7-7 7"/>
+        </svg>
+        IPD Register
+      </a>
+      <button type="button" class="btn-header btn-refresh" (click)="refreshOpdRegister()" [disabled]="isLoading">
+        <svg class="refresh-icon" [class.spinning]="isLoading" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+          <polyline points="23 4 23 10 17 10"/>
+          <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+        </svg>
         {{ isLoading ? 'Loading…' : 'Refresh' }}
       </button>
     </div>
+  </header>
 
+  <!-- Status banners -->
+  <div class="banner banner-error" role="alert" aria-live="polite" *ngIf="errorMessage">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/>
+      <line x1="12" y1="16" x2="12.01" y2="16"/>
+    </svg>
+    <span class="banner-text">{{ errorMessage }}</span>
+    <button class="btn-retry" (click)="refreshOpdRegister()">Retry</button>
+  </div>
+  <div class="banner banner-success" role="status" aria-live="polite" *ngIf="successMessage">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <polyline points="20 6 9 17 4 12"/>
+    </svg>
+    <span class="banner-text">{{ successMessage }}</span>
+  </div>
+
+  <!-- ── ENTRY FORM ─────────────────────────────────── -->
+  <section class="form-section">
+    <div class="section-title-row">
+      <h2>Add OPD Entry</h2>
+      <button type="button" class="btn-collapse" (click)="formCollapsed = !formCollapsed"
+              [attr.aria-expanded]="!formCollapsed" aria-controls="opd-form-body">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+             [class.rotated]="formCollapsed">
+          <polyline points="18 15 12 9 6 15"/>
+        </svg>
+        {{ formCollapsed ? 'Expand Form' : 'Collapse Form' }}
+      </button>
+    </div>
+
+    <div id="opd-form-body" [class.collapsed]="formCollapsed">
+
+      <!-- Basic Info -->
+      <div class="form-group-section basic-info">
+        <h3>Basic Info</h3>
+        <div class="basic-info-grid">
+          <div class="basic-info-item">
+            <label>Date</label>
+            <input type="date" [(ngModel)]="newOpdEntry.date" />
+          </div>
+          <div class="basic-info-item">
+            <label>OPD No <span>(auto)</span></label>
+            <input type="text" [(ngModel)]="newOpdEntry.opdNo" readonly placeholder="(auto)" />
+          </div>
+          <div class="basic-info-item">
+            <label>Reg No <span>(auto)</span></label>
+            <input type="text" [(ngModel)]="newOpdEntry.regNo" readonly placeholder="(auto)" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Patient + Visit split -->
+      <div class="split-grid">
+        <div class="form-group-section">
+          <h3>Patient Details</h3>
+          <div class="form-row patient-row">
+            <div class="form-field">
+              <label>Patient Name <span class="req">*</span></label>
+              <input type="text" [(ngModel)]="newOpdEntry.patientName" placeholder="Enter patient name" />
+            </div>
+            <div class="form-field">
+              <label>Age <span class="req">*</span></label>
+              <input type="number" [(ngModel)]="newOpdEntry.age" placeholder="e.g. 35" min="0" />
+            </div>
+            <div class="form-field">
+              <label>Sex <span class="req">*</span></label>
+              <select [(ngModel)]="newOpdEntry.sex">
+                <option>Female</option>
+                <option>Male</option>
+                <option>Other</option>
+              </select>
+            </div>
+            <div class="form-field">
+              <label>Weight (kg)</label>
+              <input type="text" [(ngModel)]="newOpdEntry.weight" placeholder="e.g. 65" />
+            </div>
+            <div class="form-field">
+              <label>Height (cm)</label>
+              <input type="text" [(ngModel)]="newOpdEntry.height" placeholder="e.g. 172" />
+            </div>
+            <div class="form-field">
+              <label>Contact</label>
+              <input type="text" [(ngModel)]="newOpdEntry.contact" placeholder="Phone number" />
+            </div>
+            <div class="form-field">
+              <label>Address</label>
+              <input type="text" [(ngModel)]="newOpdEntry.address" placeholder="Village / Town" />
+            </div>
+            <div class="form-field">
+              <label>Client Category</label>
+              <select [(ngModel)]="newOpdEntry.clientCategory">
+                <option>General</option>
+                <option>Emergency</option>
+                <option>Referral</option>
+              </select>
+            </div>
+            <div class="form-field">
+              <label>Referred From</label>
+              <input type="text" [(ngModel)]="newOpdEntry.referredFrom" placeholder="Optional" />
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group-section">
+          <h3>Visit Details</h3>
+          <div class="form-row visit-row">
+            <div class="form-field">
+              <label>Department</label>
+              <input type="text" [(ngModel)]="newOpdEntry.department" placeholder="e.g. OPD, Maternity" />
+            </div>
+            <div class="form-field">
+              <label>Doctor <span class="req">*</span></label>
+              <select [ngModel]="newOpdEntry.doctor" (ngModelChange)="onDoctorChange($event, newOpdEntry)">
+                <option value="" disabled>Select doctor</option>
+                <option *ngFor="let d of doctors" [value]="d.username">{{ d.name }}</option>
+              </select>
+            </div>
+            <div class="form-field">
+              <label>Complaint</label>
+              <input type="text" [(ngModel)]="newOpdEntry.complaint" placeholder="Main complaint" />
+            </div>
+            <div class="form-field">
+              <label>Diagnosis</label>
+              <input type="text" [(ngModel)]="newOpdEntry.diagnosis" placeholder="Diagnosis / findings" />
+            </div>
+            <div class="form-field">
+              <label>Treatment</label>
+              <input type="text" [(ngModel)]="newOpdEntry.treatment" placeholder="Treatment / prescription" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Screening -->
+      <div class="form-group-section">
+        <h3>Screening</h3>
+        <div class="form-row">
+          <div class="form-field">
+            <label>Malaria Test</label>
+            <select [(ngModel)]="newOpdEntry.malariaTest">
+              <option>Not done</option>
+              <option>Positive</option>
+              <option>Negative</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label>TB Screen</label>
+            <select [(ngModel)]="newOpdEntry.tbScreen">
+              <option>No</option>
+              <option>Yes</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label>Palliative Care</label>
+            <select [(ngModel)]="newOpdEntry.palliativeCare">
+              <option>No</option>
+              <option>Yes</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label>Alcohol Use</label>
+            <select [(ngModel)]="newOpdEntry.alcoholUse">
+              <option>No</option>
+              <option>Yes</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Form actions -->
+      <div class="form-actions">
+        <button type="button" class="btn-primary" (click)="addOpdEntry()" [disabled]="isSaving">
+          <svg *ngIf="isSaving" class="btn-spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4"/>
+          </svg>
+          <svg *ngIf="!isSaving" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+          {{ isSaving ? 'Saving…' : 'Add OPD Entry' }}
+        </button>
+      </div>
+
+    </div><!-- /form-body -->
+  </section>
+
+  <!-- ── RECORDS TABLE ──────────────────────────────── -->
+  <section class="table-section">
+    <div class="table-header-row">
+      <h2>
+        OPD Records
+        <span class="record-count">{{ filteredOpdRegister.length }}</span>
+        <span class="record-total" *ngIf="hasActiveFilters"> of {{ opdRegister.length }}</span>
+      </h2>
+    </div>
+
+    <!-- Filters -->
     <div class="filters-section">
-      <h3>Filters</h3>
+      <div class="filters-title-row">
+        <h3>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
+          </svg>
+          Filters
+          <span class="filter-badge" *ngIf="hasActiveFilters">Active</span>
+        </h3>
+        <button class="btn-clear-filters" *ngIf="hasActiveFilters" (click)="clearFilters()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+          Clear All
+        </button>
+      </div>
       <div class="form-row">
         <div class="form-field">
           <label>Date</label>
-          <input type="date" [(ngModel)]="filterDate" />
+          <input type="date" [(ngModel)]="filterDate" (ngModelChange)="currentPage = 1" />
         </div>
         <div class="form-field">
           <label>Doctor</label>
-          <select [(ngModel)]="filterDoctor">
-            <option value="">All</option>
+          <select [(ngModel)]="filterDoctor" (ngModelChange)="currentPage = 1">
+            <option value="">All Doctors</option>
             <option *ngFor="let d of doctors" [value]="d.username">{{ d.name }}</option>
           </select>
         </div>
         <div class="form-field">
           <label>Department</label>
-          <input type="text" [(ngModel)]="filterDepartment" />
+          <input type="text" [(ngModel)]="filterDepartment" (ngModelChange)="currentPage = 1" placeholder="Search department" />
         </div>
         <div class="form-field">
           <label>Patient Name</label>
-          <input type="text" [(ngModel)]="filterPatientName" placeholder="Search by name" />
+          <input type="text" [(ngModel)]="filterPatientName" (ngModelChange)="currentPage = 1" placeholder="Search by name" />
         </div>
         <div class="form-field">
           <label>Diagnosis</label>
-          <input type="text" [(ngModel)]="filterDiagnosis" placeholder="Search diagnosis" />
+          <input type="text" [(ngModel)]="filterDiagnosis" (ngModelChange)="currentPage = 1" placeholder="Search diagnosis" />
         </div>
         <div class="form-field">
           <label>Malaria Test</label>
-          <select [(ngModel)]="filterMalariaTest">
-            <option value="">All</option>
+          <select [(ngModel)]="filterMalariaTest" (ngModelChange)="currentPage = 1">
+            <option value="">All Results</option>
             <option>Not done</option>
             <option>Positive</option>
             <option>Negative</option>
@@ -201,157 +278,196 @@
         </div>
       </div>
     </div>
-  </section>
-
-  <section class="table-section">
-    <h2>OPD Register Entries ({{ filteredOpdRegister.length }} total)</h2>
 
     <!-- Loading indicator -->
     <div class="loading-row" *ngIf="isLoading">
       <span class="loader"></span> Loading records…
     </div>
 
-    <div class="table-controls" *ngIf="!isLoading">
-      <div class="bulk-actions" *ngIf="selectedRows.size > 0">
-        <button (click)="deleteSelectedRows()" class="delete-selected">Delete Selected ({{ selectedRows.size }})</button>
-      </div>
-      <div class="pagination-controls">
-        <label>Page Size:
-          <select [(ngModel)]="pageSize" (change)="changePageSize()">
-            <option *ngFor="let size of pageSizeOptions" [value]="size">{{ size }}</option>
+    <ng-container *ngIf="!isLoading">
+      <!-- Table controls -->
+      <div class="table-controls">
+        <div class="bulk-actions" *ngIf="selectedRows.size > 0">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="9 11 12 14 22 4"/>
+            <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+          </svg>
+          {{ selectedRows.size }} selected
+          <button class="btn-delete-selected" (click)="deleteSelectedRows()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="3 6 5 6 21 6"/>
+              <path d="M19 6l-1 14H6L5 6M10 11v6M14 11v6M9 6V4h6v2"/>
+            </svg>
+            Delete Selected
+          </button>
+        </div>
+
+        <div class="pagination-controls">
+          <button class="btn-nav" (click)="goToPage(currentPage - 1)" [disabled]="currentPage <= 1">← Prev</button>
+          <div class="page-numbers">
+            <button *ngIf="pageNumbers[0] > 1" class="page-btn" (click)="goToPage(1)">1</button>
+            <span *ngIf="pageNumbers[0] > 2" class="ellipsis">…</span>
+            <button *ngFor="let p of pageNumbers" class="page-btn" [class.active]="p === currentPage" (click)="goToPage(p)">{{ p }}</button>
+            <span *ngIf="pageNumbers[pageNumbers.length-1] < totalPages - 1" class="ellipsis">…</span>
+            <button *ngIf="pageNumbers[pageNumbers.length-1] < totalPages" class="page-btn" (click)="goToPage(totalPages)">{{ totalPages }}</button>
+          </div>
+          <button class="btn-nav" (click)="goToPage(currentPage + 1)" [disabled]="currentPage >= totalPages">Next →</button>
+          <select class="page-size-select" [ngModel]="pageSize" (ngModelChange)="pageSize = $event; changePageSize()">
+            <option *ngFor="let size of pageSizeOptions" [ngValue]="size">{{ size }} / page</option>
           </select>
-        </label>
-        <button (click)="goToPage(currentPage - 1)" [disabled]="currentPage <= 1">Previous</button>
-        <span>Page {{ currentPage }} of {{ totalPages }}</span>
-        <button (click)="goToPage(currentPage + 1)" [disabled]="currentPage >= totalPages">Next</button>
+        </div>
       </div>
-    </div>
 
-    <table class="data-table" *ngIf="!isLoading">
-      <thead>
-        <tr>
-          <th rowspan="2"><input type="checkbox" (change)="selectedRows.clear()" /></th>
-          <th rowspan="2">#</th>
-          <th colspan="7" class="group-header">Patient Details</th>
-          <th colspan="5" class="group-header">Clinical</th>
-          <th colspan="4" class="group-header">Screening</th>
-          <th colspan="2" class="group-header">Referral / Actions</th>
-        </tr>
-        <tr>
-          <th>Date</th>
-          <th>OPD No</th>
-          <th>Reg No</th>
-          <th>Patient</th>
-          <th>Age</th>
-          <th>Sex</th>
-          <th>Category</th>
-          <th>Department</th>
-          <th>Doctor</th>
-          <th>Complaint</th>
-          <th>Diagnosis</th>
-          <th>Treatment</th>
-          <th>Malaria</th>
-          <th>TB Screen</th>
-          <th>Palliative Care</th>
-          <th>Alcohol Use</th>
-          <th>Referred From</th>
-          <th>Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let entry of paginatedEntries; let i = index; trackBy: trackByIndex">
-          <td><input type="checkbox"
-            [checked]="selectedRows.has((currentPage - 1) * pageSize + i)"
-            (change)="toggleRowSelection((currentPage - 1) * pageSize + i)" /></td>
-          <td>{{ (currentPage - 1) * pageSize + i + 1 }}</td>
+      <div class="table-wrap">
+        <table class="data-table" aria-label="OPD register entries">
+          <thead>
+            <tr>
+              <th rowspan="2" class="col-check">
+                <input type="checkbox" [checked]="allPageSelected" (change)="toggleSelectAll()"
+                       title="Select all on this page" />
+              </th>
+              <th rowspan="2" class="col-no">#</th>
+              <th colspan="7" class="group-header">Patient Details</th>
+              <th colspan="5" class="group-header">Clinical</th>
+              <th colspan="4" class="group-header">Screening</th>
+              <th colspan="2" class="group-header">Referral / Actions</th>
+            </tr>
+            <tr>
+              <th>Date</th><th>OPD No</th><th>Reg No</th><th>Patient</th>
+              <th>Age</th><th>Sex</th><th>Category</th>
+              <th>Department</th><th>Doctor</th><th>Complaint</th>
+              <th>Diagnosis</th><th>Treatment</th>
+              <th>Malaria</th><th>TB Screen</th><th>Palliative</th><th>Alcohol</th>
+              <th>Referred From</th><th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let entry of paginatedEntries; let i = index; trackBy: trackByIndex"
+                [class.row-selected]="selectedRows.has((currentPage - 1) * pageSize + i)"
+                [class.row-editing]="entry.editing">
+              <td class="col-check">
+                <input type="checkbox"
+                  [checked]="selectedRows.has((currentPage - 1) * pageSize + i)"
+                  (change)="toggleRowSelection((currentPage - 1) * pageSize + i)" />
+              </td>
+              <td class="col-no">{{ (currentPage - 1) * pageSize + i + 1 }}</td>
 
-          <td *ngIf="!entry.editing">{{ entry.date }}</td>
-          <td *ngIf="entry.editing"><input type="date" [(ngModel)]="entry.date" /></td>
+              <td *ngIf="!entry.editing">{{ entry.date }}</td>
+              <td *ngIf="entry.editing"><input type="date" [(ngModel)]="entry.date" /></td>
 
-          <td>{{ entry.opdNo }}</td>
-          <td>{{ entry.regNo }}</td>
+              <td>{{ entry.opdNo || '—' }}</td>
+              <td>{{ entry.regNo || '—' }}</td>
 
-          <td *ngIf="!entry.editing">{{ entry.patientName }}</td>
-          <td *ngIf="entry.editing"><input type="text" [(ngModel)]="entry.patientName" /></td>
+              <td *ngIf="!entry.editing" class="col-name">{{ entry.patientName }}</td>
+              <td *ngIf="entry.editing"><input type="text" [(ngModel)]="entry.patientName" /></td>
 
-          <td *ngIf="!entry.editing">{{ entry.age }}</td>
-          <td *ngIf="entry.editing"><input type="number" [(ngModel)]="entry.age" /></td>
+              <td *ngIf="!entry.editing">{{ entry.age || '—' }}</td>
+              <td *ngIf="entry.editing"><input type="number" [(ngModel)]="entry.age" /></td>
 
-          <td *ngIf="!entry.editing">{{ entry.sex }}</td>
-          <td *ngIf="entry.editing">
-            <select [(ngModel)]="entry.sex">
-              <option>Female</option><option>Male</option><option>Other</option>
-            </select>
-          </td>
+              <td *ngIf="!entry.editing">{{ entry.sex }}</td>
+              <td *ngIf="entry.editing">
+                <select [(ngModel)]="entry.sex">
+                  <option>Female</option><option>Male</option><option>Other</option>
+                </select>
+              </td>
 
-          <td *ngIf="!entry.editing">{{ entry.clientCategory }}</td>
-          <td *ngIf="entry.editing">
-            <select [(ngModel)]="entry.clientCategory">
-              <option>General</option><option>Emergency</option><option>Referral</option>
-            </select>
-          </td>
+              <td *ngIf="!entry.editing">
+                <span class="category-badge" [attr.data-cat]="entry.clientCategory">{{ entry.clientCategory }}</span>
+              </td>
+              <td *ngIf="entry.editing">
+                <select [(ngModel)]="entry.clientCategory">
+                  <option>General</option><option>Emergency</option><option>Referral</option>
+                </select>
+              </td>
 
-          <td *ngIf="!entry.editing">{{ entry.department }}</td>
-          <td *ngIf="entry.editing"><input type="text" [(ngModel)]="entry.department" /></td>
+              <td *ngIf="!entry.editing">{{ entry.department || '—' }}</td>
+              <td *ngIf="entry.editing"><input type="text" [(ngModel)]="entry.department" /></td>
 
-          <td *ngIf="!entry.editing">{{ entry.doctor }}</td>
-          <td *ngIf="entry.editing">
-            <select [ngModel]="entry.doctor" (ngModelChange)="onDoctorChange($event, entry)">
-              <option *ngFor="let d of doctors" [value]="d.username">{{ d.name }}</option>
-            </select>
-          </td>
+              <td *ngIf="!entry.editing">{{ entry.doctor || '—' }}</td>
+              <td *ngIf="entry.editing">
+                <select [ngModel]="entry.doctor" (ngModelChange)="onDoctorChange($event, entry)">
+                  <option *ngFor="let d of doctors" [value]="d.username">{{ d.name }}</option>
+                </select>
+              </td>
 
-          <td *ngIf="!entry.editing">{{ entry.complaint }}</td>
-          <td *ngIf="entry.editing"><input type="text" [(ngModel)]="entry.complaint" /></td>
+              <td *ngIf="!entry.editing" class="col-wrap">{{ entry.complaint || '—' }}</td>
+              <td *ngIf="entry.editing"><input type="text" [(ngModel)]="entry.complaint" /></td>
 
-          <td *ngIf="!entry.editing">{{ entry.diagnosis }}</td>
-          <td *ngIf="entry.editing"><input type="text" [(ngModel)]="entry.diagnosis" /></td>
+              <td *ngIf="!entry.editing" class="col-wrap">{{ entry.diagnosis || '—' }}</td>
+              <td *ngIf="entry.editing"><input type="text" [(ngModel)]="entry.diagnosis" /></td>
 
-          <td *ngIf="!entry.editing">{{ entry.treatment }}</td>
-          <td *ngIf="entry.editing"><input type="text" [(ngModel)]="entry.treatment" /></td>
+              <td *ngIf="!entry.editing" class="col-wrap">{{ entry.treatment || '—' }}</td>
+              <td *ngIf="entry.editing"><input type="text" [(ngModel)]="entry.treatment" /></td>
 
-          <td *ngIf="!entry.editing">{{ entry.malariaTest }}</td>
-          <td *ngIf="entry.editing">
-            <select [(ngModel)]="entry.malariaTest">
-              <option>Not done</option><option>Positive</option><option>Negative</option>
-            </select>
-          </td>
+              <td *ngIf="!entry.editing">
+                <span class="malaria-badge" [attr.data-result]="entry.malariaTest">{{ entry.malariaTest }}</span>
+              </td>
+              <td *ngIf="entry.editing">
+                <select [(ngModel)]="entry.malariaTest">
+                  <option>Not done</option><option>Positive</option><option>Negative</option>
+                </select>
+              </td>
 
-          <td *ngIf="!entry.editing">{{ entry.tbScreen }}</td>
-          <td *ngIf="entry.editing">
-            <select [(ngModel)]="entry.tbScreen"><option>Yes</option><option>No</option></select>
-          </td>
+              <td *ngIf="!entry.editing">{{ entry.tbScreen }}</td>
+              <td *ngIf="entry.editing">
+                <select [(ngModel)]="entry.tbScreen"><option>No</option><option>Yes</option></select>
+              </td>
 
-          <td *ngIf="!entry.editing">{{ entry.palliativeCare }}</td>
-          <td *ngIf="entry.editing">
-            <select [(ngModel)]="entry.palliativeCare"><option>Yes</option><option>No</option></select>
-          </td>
+              <td *ngIf="!entry.editing">{{ entry.palliativeCare }}</td>
+              <td *ngIf="entry.editing">
+                <select [(ngModel)]="entry.palliativeCare"><option>No</option><option>Yes</option></select>
+              </td>
 
-          <td *ngIf="!entry.editing">{{ entry.alcoholUse }}</td>
-          <td *ngIf="entry.editing">
-            <select [(ngModel)]="entry.alcoholUse"><option>Yes</option><option>No</option></select>
-          </td>
+              <td *ngIf="!entry.editing">{{ entry.alcoholUse }}</td>
+              <td *ngIf="entry.editing">
+                <select [(ngModel)]="entry.alcoholUse"><option>No</option><option>Yes</option></select>
+              </td>
 
-          <td *ngIf="!entry.editing">{{ entry.referredFrom }}</td>
-          <td *ngIf="entry.editing"><input type="text" [(ngModel)]="entry.referredFrom" /></td>
+              <td *ngIf="!entry.editing">{{ entry.referredFrom || '—' }}</td>
+              <td *ngIf="entry.editing"><input type="text" [(ngModel)]="entry.referredFrom" /></td>
 
-          <td>
-            <button *ngIf="!entry.editing" (click)="editOpdEntry((currentPage - 1) * pageSize + i)">Edit</button>
-            <button *ngIf="entry.editing" (click)="saveOpdEntry((currentPage - 1) * pageSize + i)" [disabled]="entry.saving">
-              {{ entry.saving ? '…' : 'Save' }}
-            </button>
-            <button *ngIf="entry.editing" (click)="cancelOpdEdit((currentPage - 1) * pageSize + i)">Cancel</button>
-            <button (click)="deleteOpdEntry((currentPage - 1) * pageSize + i)">Delete</button>
-          </td>
-        </tr>
+              <td class="col-actions">
+                <ng-container *ngIf="!entry.editing">
+                  <button class="btn-row-edit" (click)="editOpdEntry((currentPage - 1) * pageSize + i)">Edit</button>
+                  <button class="btn-row-delete" (click)="deleteOpdEntry((currentPage - 1) * pageSize + i)">Delete</button>
+                </ng-container>
+                <ng-container *ngIf="entry.editing">
+                  <button class="btn-row-save" (click)="saveOpdEntry((currentPage - 1) * pageSize + i)" [disabled]="entry.saving">
+                    {{ entry.saving ? '…' : 'Save' }}
+                  </button>
+                  <button class="btn-row-cancel" (click)="cancelOpdEdit((currentPage - 1) * pageSize + i)">Cancel</button>
+                </ng-container>
+              </td>
+            </tr>
 
-        <tr *ngIf="filteredOpdRegister.length === 0">
-          <td colspan="20" style="text-align:center; padding: 2rem; color: #8a96b0;">
-            No OPD entries found.
-          </td>
-        </tr>
-      </tbody>
-    </table>
+            <!-- Empty state -->
+            <tr *ngIf="filteredOpdRegister.length === 0">
+              <td colspan="20" class="empty-state">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                </svg>
+                <p>No OPD entries found</p>
+                <small *ngIf="hasActiveFilters">Try adjusting your search filters</small>
+                <button *ngIf="hasActiveFilters" class="btn-clear-empty" (click)="clearFilters()">Clear Filters</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div><!-- /table-wrap -->
+
+      <!-- Bottom pagination -->
+      <div class="pagination-controls bottom-pagination">
+        <span class="pagination-info">
+          Showing {{ paginatedEntries.length }} of {{ filteredOpdRegister.length }} records
+        </span>
+        <button class="btn-nav" (click)="goToPage(currentPage - 1)" [disabled]="currentPage <= 1">← Prev</button>
+        <div class="page-numbers">
+          <button *ngFor="let p of pageNumbers" class="page-btn" [class.active]="p === currentPage" (click)="goToPage(p)">{{ p }}</button>
+        </div>
+        <button class="btn-nav" (click)="goToPage(currentPage + 1)" [disabled]="currentPage >= totalPages">Next →</button>
+      </div>
+
+    </ng-container>
   </section>
 
 </section>
