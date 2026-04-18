@@ -6,6 +6,16 @@
     <p>Out-Patient Department register for patient visits and treatments.</p>
   </header>
 
+  <!-- Status banners -->
+  <div class="banner banner-error" role="alert" *ngIf="errorMessage">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+    {{ errorMessage }}
+  </div>
+  <div class="banner banner-success" role="status" *ngIf="successMessage">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+    {{ successMessage }}
+  </div>
+
   <section class="form-section">
     <h2>Add OPD Entry</h2>
 
@@ -87,8 +97,9 @@
           </div>
           <div class="form-field">
             <label>Doctor *</label>
-            <select [(ngModel)]="newOpdEntry.doctor">
-              <option *ngFor="let d of doctors" [value]="d">{{ d }}</option>
+            <select [ngModel]="newOpdEntry.doctor" (ngModelChange)="onDoctorChange($event, newOpdEntry)">
+              <option value="" disabled>Select doctor</option>
+              <option *ngFor="let d of doctors" [value]="d.username">{{ d.name }}</option>
             </select>
           </div>
           <div class="form-field">
@@ -143,9 +154,14 @@
     </div>
 
     <div class="actions-row">
-      <button type="button" (click)="addOpdEntry()">Add OPD Entry</button>
+      <button type="button" (click)="addOpdEntry()" [disabled]="isSaving">
+        {{ isSaving ? 'Saving…' : 'Add OPD Entry' }}
+      </button>
       <button type="button" class="ipd-redirect" routerLink="/ipd">Go to IPD Register</button>
       <button type="button" (click)="exportToCsv()">Export to CSV</button>
+      <button type="button" (click)="refreshOpdRegister()" [disabled]="isLoading">
+        {{ isLoading ? 'Loading…' : 'Refresh' }}
+      </button>
     </div>
 
     <div class="filters-section">
@@ -159,7 +175,7 @@
           <label>Doctor</label>
           <select [(ngModel)]="filterDoctor">
             <option value="">All</option>
-            <option *ngFor="let d of doctors" [value]="d">{{ d }}</option>
+            <option *ngFor="let d of doctors" [value]="d.username">{{ d.name }}</option>
           </select>
         </div>
         <div class="form-field">
@@ -174,13 +190,28 @@
           <label>Diagnosis</label>
           <input type="text" [(ngModel)]="filterDiagnosis" placeholder="Search diagnosis" />
         </div>
+        <div class="form-field">
+          <label>Malaria Test</label>
+          <select [(ngModel)]="filterMalariaTest">
+            <option value="">All</option>
+            <option>Not done</option>
+            <option>Positive</option>
+            <option>Negative</option>
+          </select>
+        </div>
       </div>
     </div>
   </section>
 
   <section class="table-section">
     <h2>OPD Register Entries ({{ filteredOpdRegister.length }} total)</h2>
-    <div class="table-controls">
+
+    <!-- Loading indicator -->
+    <div class="loading-row" *ngIf="isLoading">
+      <span class="loader"></span> Loading records…
+    </div>
+
+    <div class="table-controls" *ngIf="!isLoading">
       <div class="bulk-actions" *ngIf="selectedRows.size > 0">
         <button (click)="deleteSelectedRows()" class="delete-selected">Delete Selected ({{ selectedRows.size }})</button>
       </div>
@@ -195,7 +226,8 @@
         <button (click)="goToPage(currentPage + 1)" [disabled]="currentPage >= totalPages">Next</button>
       </div>
     </div>
-    <table class="data-table">
+
+    <table class="data-table" *ngIf="!isLoading">
       <thead>
         <tr>
           <th rowspan="2"><input type="checkbox" (change)="selectedRows.clear()" /></th>
@@ -228,84 +260,94 @@
       </thead>
       <tbody>
         <tr *ngFor="let entry of paginatedEntries; let i = index; trackBy: trackByIndex">
-          <td><input type="checkbox" [checked]="selectedRows.has((currentPage - 1) * pageSize + i)" (change)="toggleRowSelection((currentPage - 1) * pageSize + i)" /></td>
+          <td><input type="checkbox"
+            [checked]="selectedRows.has((currentPage - 1) * pageSize + i)"
+            (change)="toggleRowSelection((currentPage - 1) * pageSize + i)" /></td>
           <td>{{ (currentPage - 1) * pageSize + i + 1 }}</td>
+
           <td *ngIf="!entry.editing">{{ entry.date }}</td>
           <td *ngIf="entry.editing"><input type="date" [(ngModel)]="entry.date" /></td>
-          <td *ngIf="!entry.editing">{{ entry.opdNo }}</td>
-          <td *ngIf="entry.editing"><input type="text" [(ngModel)]="entry.opdNo" /></td>
-          <td *ngIf="!entry.editing">{{ entry.regNo }}</td>
-          <td *ngIf="entry.editing"><input type="text" [(ngModel)]="entry.regNo" /></td>
+
+          <td>{{ entry.opdNo }}</td>
+          <td>{{ entry.regNo }}</td>
+
           <td *ngIf="!entry.editing">{{ entry.patientName }}</td>
           <td *ngIf="entry.editing"><input type="text" [(ngModel)]="entry.patientName" /></td>
+
           <td *ngIf="!entry.editing">{{ entry.age }}</td>
           <td *ngIf="entry.editing"><input type="number" [(ngModel)]="entry.age" /></td>
+
           <td *ngIf="!entry.editing">{{ entry.sex }}</td>
           <td *ngIf="entry.editing">
             <select [(ngModel)]="entry.sex">
-              <option>Female</option>
-              <option>Male</option>
-              <option>Other</option>
+              <option>Female</option><option>Male</option><option>Other</option>
             </select>
           </td>
+
           <td *ngIf="!entry.editing">{{ entry.clientCategory }}</td>
           <td *ngIf="entry.editing">
             <select [(ngModel)]="entry.clientCategory">
-              <option>General</option>
-              <option>Emergency</option>
-              <option>Referral</option>
+              <option>General</option><option>Emergency</option><option>Referral</option>
             </select>
           </td>
+
           <td *ngIf="!entry.editing">{{ entry.department }}</td>
           <td *ngIf="entry.editing"><input type="text" [(ngModel)]="entry.department" /></td>
+
           <td *ngIf="!entry.editing">{{ entry.doctor }}</td>
           <td *ngIf="entry.editing">
-            <select [(ngModel)]="entry.doctor">
-              <option *ngFor="let d of doctors" [value]="d">{{ d }}</option>
+            <select [ngModel]="entry.doctor" (ngModelChange)="onDoctorChange($event, entry)">
+              <option *ngFor="let d of doctors" [value]="d.username">{{ d.name }}</option>
             </select>
           </td>
+
           <td *ngIf="!entry.editing">{{ entry.complaint }}</td>
           <td *ngIf="entry.editing"><input type="text" [(ngModel)]="entry.complaint" /></td>
+
           <td *ngIf="!entry.editing">{{ entry.diagnosis }}</td>
           <td *ngIf="entry.editing"><input type="text" [(ngModel)]="entry.diagnosis" /></td>
+
           <td *ngIf="!entry.editing">{{ entry.treatment }}</td>
           <td *ngIf="entry.editing"><input type="text" [(ngModel)]="entry.treatment" /></td>
+
           <td *ngIf="!entry.editing">{{ entry.malariaTest }}</td>
           <td *ngIf="entry.editing">
             <select [(ngModel)]="entry.malariaTest">
-              <option>Not done</option>
-              <option>Positive</option>
-              <option>Negative</option>
+              <option>Not done</option><option>Positive</option><option>Negative</option>
             </select>
           </td>
+
           <td *ngIf="!entry.editing">{{ entry.tbScreen }}</td>
           <td *ngIf="entry.editing">
-            <select [(ngModel)]="entry.tbScreen">
-              <option>Yes</option>
-              <option>No</option>
-            </select>
+            <select [(ngModel)]="entry.tbScreen"><option>Yes</option><option>No</option></select>
           </td>
+
           <td *ngIf="!entry.editing">{{ entry.palliativeCare }}</td>
           <td *ngIf="entry.editing">
-            <select [(ngModel)]="entry.palliativeCare">
-              <option>Yes</option>
-              <option>No</option>
-            </select>
+            <select [(ngModel)]="entry.palliativeCare"><option>Yes</option><option>No</option></select>
           </td>
+
           <td *ngIf="!entry.editing">{{ entry.alcoholUse }}</td>
           <td *ngIf="entry.editing">
-            <select [(ngModel)]="entry.alcoholUse">
-              <option>Yes</option>
-              <option>No</option>
-            </select>
+            <select [(ngModel)]="entry.alcoholUse"><option>Yes</option><option>No</option></select>
           </td>
+
           <td *ngIf="!entry.editing">{{ entry.referredFrom }}</td>
           <td *ngIf="entry.editing"><input type="text" [(ngModel)]="entry.referredFrom" /></td>
+
           <td>
             <button *ngIf="!entry.editing" (click)="editOpdEntry((currentPage - 1) * pageSize + i)">Edit</button>
-            <button *ngIf="entry.editing" (click)="saveOpdEntry((currentPage - 1) * pageSize + i)">Save</button>
+            <button *ngIf="entry.editing" (click)="saveOpdEntry((currentPage - 1) * pageSize + i)" [disabled]="entry.saving">
+              {{ entry.saving ? '…' : 'Save' }}
+            </button>
             <button *ngIf="entry.editing" (click)="cancelOpdEdit((currentPage - 1) * pageSize + i)">Cancel</button>
             <button (click)="deleteOpdEntry((currentPage - 1) * pageSize + i)">Delete</button>
+          </td>
+        </tr>
+
+        <tr *ngIf="filteredOpdRegister.length === 0">
+          <td colspan="20" style="text-align:center; padding: 2rem; color: #8a96b0;">
+            No OPD entries found.
           </td>
         </tr>
       </tbody>

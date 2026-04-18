@@ -1,25 +1,21 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
+import { HttpClient } from '@angular/common/http';
+import { Subject, forkJoin } from 'rxjs';
+import { takeUntil, finalize } from 'rxjs/operators';
 
-interface SystemUser {
-  id: string;
-  username: string;
-  password: string;
-  role: 'admin' | 'doctor' | 'nurse' | 'receptionist' | 'accountant' | 'pharmacist';
-  email: string;
-  phone: string;
-  department: string;
-  status: 'active' | 'inactive';
-  createdDate: string;
-}
+const API = 'http://localhost:3000/api';
 
-interface OPDRegisterEntry {
+export interface OPDRegisterEntry {
+  // Local display fields
+  id?: string;                 // API id (present after save)
   opdNo: string;
   regNo: string;
   date: string;
   patientName: string;
+  patientId?: string;          // FK to patients table
   age: number;
   sex: string;
   clientCategory: string;
@@ -32,6 +28,7 @@ interface OPDRegisterEntry {
   treatment: string;
   department: string;
   doctor: string;
+  doctorId?: string;           // FK to users table
   malariaTest: string;
   tbScreen: string;
   palliativeCare: string;
@@ -39,11 +36,14 @@ interface OPDRegisterEntry {
   referredFrom: string;
   notes: string;
   editing?: boolean;
+  saving?: boolean;
 }
 
-const OPD_STORAGE = 'hospital_opd_register';
-const OPD_METADATA_STORAGE = 'hospital_opd_metadata';
-const USERS_STORAGE = 'hospital_system_users';
+export interface DoctorOption {
+  id: string;
+  name: string;
+  username: string;
+}
 
 @Component({
   selector: 'app-opd-register',
@@ -52,34 +52,13 @@ const USERS_STORAGE = 'hospital_system_users';
   templateUrl: './opd-register.html',
   styleUrls: ['./opd-register.scss'],
 })
-export class OPDRegister implements OnInit {
-  public doctors: string[] = [];
-
+export class OPDRegister implements OnInit, OnDestroy {
+  public doctors: DoctorOption[] = [];
   public opdRegister: OPDRegisterEntry[] = [];
-  public newOpdEntry: OPDRegisterEntry = {
-    opdNo: '',
-    regNo: '',
-    date: new Date().toISOString().slice(0, 10),
-    patientName: '',
-    age: 0,
-    sex: 'Female',
-    clientCategory: 'General',
-    contact: '',
-    address: '',
-    complaint: '',
-    diagnosis: '',
-    treatment: '',
-    department: '',
-    doctor: '',
-    malariaTest: 'Not done',
-    tbScreen: 'No',
-    palliativeCare: 'No',
-    alcoholUse: 'No',
-    referredFrom: '',
-    notes: '',
-  };
 
-  // HMIS metadata
+  public newOpdEntry: OPDRegisterEntry = this.blankEntry();
+
+  // HMIS metadata (stored locally — these are form-level display fields)
   public healthFacilityName = '';
   public month = '';
   public year = '';
@@ -101,110 +80,367 @@ export class OPDRegister implements OnInit {
   // Bulk delete
   public selectedRows = new Set<number>();
 
-  constructor() {
-    this.loadDoctorsFromUsers();
-    this.loadOpdRegister();
-    this.loadOpdMetadata();
+  // State
+  public isLoading = false;
+  public isSaving = false;
+  public errorMessage = '';
+  public successMessage = '';
+
+  private destroy$ = new Subject<void>();
+
+  constructor(private http: HttpClient) {}
+
+  ngOnInit(): void {
+    this.loadInitialData();
   }
 
-  ngOnInit(): void {}
-
-  private loadDoctorsFromUsers(): void {
-    if (typeof window === 'undefined') return;
-
-    const usersRaw = localStorage.getItem(USERS_STORAGE);
-    if (!usersRaw) return;
-
-    try {
-      const allUsers = JSON.parse(usersRaw) as SystemUser[];
-      // Filter only active doctors
-      const doctorUsers = allUsers.filter((u) => u.role === 'doctor' && u.status === 'active');
-      this.doctors = doctorUsers.map((u) => u.username);
-
-      // Set default doctor to first available
-      if (this.doctors.length > 0) {
-        this.newOpdEntry.doctor = this.doctors[0];
-      }
-    } catch (e) {
-      console.error('Error loading doctors:', e);
-      this.doctors = [];
-    }
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
-  private loadOpdRegister() {
-    if (typeof window === 'undefined') {
-      this.opdRegister = [];
-      return;
-    }
-    const raw = localStorage.getItem(OPD_STORAGE);
-    if (!raw) {
-      this.opdRegister = [];
-      return;
-    }
-    try {
-      this.opdRegister = JSON.parse(raw) as OPDRegisterEntry[];
-    } catch {
-      this.opdRegister = [];
-    }
+  // ─── Initial data load ─────────────────────────────────────────
+
+  private loadInitialData(): void {
+    this.isLoading = true;
+
+    forkJoin({
+      doctors: this.http.get<any>(`${API}/users?role=doctor&status=active&limit=100`),
+      visits:  this.http.get<any>(`${API}/opd?limit=1000`),
+    })
+      .pipe(takeUntil(this.destroy$), finalize(() => { this.isLoading = false; }))
+      .subscribe({
+        next: ({ doctors, visits }) => {
+          this.doctors = (doctors?.data ?? []).map((u: any) => ({
+            id: u.id,
+            name: u.name,
+            username: u.username,
+          }));
+
+          if (this.doctors.length > 0) {
+            this.newOpdEntry.doctor   = this.doctors[0].username;
+            this.newOpdEntry.doctorId = this.doctors[0].id;
+          }
+
+          this.opdRegister = (visits?.data ?? []).map((v: any) => this.mapVisitToEntry(v));
+        },
+        error: (err) => {
+          this.errorMessage = 'Failed to load OPD data. Please refresh.';
+          console.error('OPD load error:', err);
+        },
+      });
   }
 
-  private saveOpdRegister() {
-    if (typeof window === 'undefined') return;
-    localStorage.setItem(OPD_STORAGE, JSON.stringify(this.opdRegister));
+  // ─── Refresh ───────────────────────────────────────────────────
+
+  public refreshOpdRegister(): void {
+    this.isLoading = true;
+    this.errorMessage = '';
+
+    this.http.get<any>(`${API}/opd?limit=1000`)
+      .pipe(takeUntil(this.destroy$), finalize(() => { this.isLoading = false; }))
+      .subscribe({
+        next: (res) => {
+          this.opdRegister = (res?.data ?? []).map((v: any) => this.mapVisitToEntry(v));
+        },
+        error: (err) => {
+          this.errorMessage = 'Failed to refresh records.';
+          console.error('OPD refresh error:', err);
+        },
+      });
   }
 
-  private loadOpdMetadata() {
-    if (typeof window === 'undefined') return;
-    const raw = localStorage.getItem(OPD_METADATA_STORAGE);
-    if (!raw) return;
-    try {
-      const metadata = JSON.parse(raw);
-      this.healthFacilityName = metadata.healthFacilityName || '';
-      this.month = metadata.month || '';
-      this.year = metadata.year || '';
-      this.ward = metadata.ward || '';
-    } catch {
-      // Ignore errors
-    }
-  }
+  // ─── Map API → display entry ───────────────────────────────────
 
-  public saveOpdMetadata() {
-    if (typeof window === 'undefined') return;
-    const metadata = {
-      healthFacilityName: this.healthFacilityName,
-      month: this.month,
-      year: this.year,
-      ward: this.ward,
+  private mapVisitToEntry(v: any): OPDRegisterEntry {
+    return {
+      id:            v.id,
+      opdNo:         v.id ?? '',
+      regNo:         v.patient_number ?? '',
+      date:          v.visit_date ?? '',
+      patientName:   v.patient_name ?? '',
+      patientId:     v.patient_id,
+      age:           v.age ?? 0,
+      sex:           v.gender ?? '',
+      clientCategory: v.client_category ?? 'General',
+      contact:       v.contact ?? '',
+      address:       v.address ?? '',
+      weight:        v.weight ?? '',
+      height:        v.height ?? '',
+      complaint:     v.chief_complaint ?? '',
+      diagnosis:     v.diagnosis ?? '',
+      treatment:     v.treatment_plan ?? '',
+      department:    v.department ?? '',
+      doctor:        v.doctor_name ?? '',
+      doctorId:      v.doctor_id,
+      malariaTest:   v.vitals?.malariaTest ?? 'Not done',
+      tbScreen:      v.vitals?.tbScreen ?? 'No',
+      palliativeCare: v.vitals?.palliativeCare ?? 'No',
+      alcoholUse:    v.vitals?.alcoholUse ?? 'No',
+      referredFrom:  v.vitals?.referredFrom ?? '',
+      notes:         v.notes ?? '',
+      editing:       false,
+      saving:        false,
     };
-    localStorage.setItem(OPD_METADATA_STORAGE, JSON.stringify(metadata));
   }
 
-  public get filteredOpdRegister() {
-    return this.opdRegister.filter(entry => {
-      const matchesDate = !this.filterDate || entry.date.includes(this.filterDate);
-      const matchesDoctor = !this.filterDoctor || entry.doctor === this.filterDoctor;
-      const matchesDepartment = !this.filterDepartment || entry.department === this.filterDepartment;
-      const matchesMalaria = !this.filterMalariaTest || entry.malariaTest === this.filterMalariaTest;
-      const matchesPatientName = !this.filterPatientName || entry.patientName.toLowerCase().includes(this.filterPatientName.toLowerCase());
-      const matchesDiagnosis = !this.filterDiagnosis || entry.diagnosis?.toLowerCase().includes(this.filterDiagnosis.toLowerCase());
-      return matchesDate && matchesDoctor && matchesDepartment && matchesMalaria && matchesPatientName && matchesDiagnosis;
+  // ─── Map display entry → API body ─────────────────────────────
+
+  private mapEntryToBody(entry: OPDRegisterEntry): object {
+    return {
+      patient_id:      entry.patientId,
+      doctor_id:       entry.doctorId,
+      visit_date:      entry.date,
+      chief_complaint: entry.complaint,
+      diagnosis:       entry.diagnosis,
+      treatment_plan:  entry.treatment,
+      vitals: {
+        weight:        entry.weight,
+        height:        entry.height,
+        malariaTest:   entry.malariaTest,
+        tbScreen:      entry.tbScreen,
+        palliativeCare: entry.palliativeCare,
+        alcoholUse:    entry.alcoholUse,
+        referredFrom:  entry.referredFrom,
+        clientCategory: entry.clientCategory,
+        contact:       entry.contact,
+      },
+      notes: entry.notes,
+    };
+  }
+
+  // ─── Add entry ─────────────────────────────────────────────────
+
+  public addOpdEntry(): void {
+    const e = this.newOpdEntry;
+    if (!e.date || !e.patientName || !e.age || !e.sex || !e.doctorId) {
+      this.errorMessage = 'Required fields: Date, Patient Name, Age, Sex, Doctor.';
+      return;
+    }
+
+    this.isSaving = true;
+    this.errorMessage = '';
+
+    // First resolve or create the patient, then create the OPD visit
+    this.resolvePatient(e).then(patientId => {
+      e.patientId = patientId;
+      const body = this.mapEntryToBody(e);
+
+      this.http.post<any>(`${API}/opd`, body)
+        .pipe(takeUntil(this.destroy$), finalize(() => { this.isSaving = false; }))
+        .subscribe({
+          next: (res) => {
+            const saved = this.mapVisitToEntry(res.data);
+            this.opdRegister = [saved, ...this.opdRegister];
+            this.newOpdEntry = this.blankEntry();
+            if (this.doctors.length > 0) {
+              this.newOpdEntry.doctor   = this.doctors[0].username;
+              this.newOpdEntry.doctorId = this.doctors[0].id;
+            }
+            this.showSuccess('OPD entry added.');
+          },
+          error: (err) => {
+            this.errorMessage = err?.error?.message ?? 'Failed to save OPD entry.';
+          },
+        });
+    }).catch(() => {
+      this.isSaving = false;
+      this.errorMessage = 'Failed to resolve patient. Ensure the patient is registered.';
     });
   }
 
-  public exportToCsv() {
+  /** Look up patient by name, return their id. In a real flow this would use a patient search modal. */
+  private resolvePatient(entry: OPDRegisterEntry): Promise<string> {
+    if (entry.patientId) return Promise.resolve(entry.patientId);
+
+    return new Promise((resolve, reject) => {
+      this.http.get<any>(`${API}/patients?search=${encodeURIComponent(entry.patientName)}&limit=1`)
+        .pipe(takeUntil(this.destroy$))
+        .subscribe({
+          next: (res) => {
+            const patient = res?.data?.[0];
+            if (patient) {
+              resolve(patient.id);
+            } else {
+              reject(new Error('Patient not found'));
+            }
+          },
+          error: reject,
+        });
+    });
+  }
+
+  // ─── Edit / save / cancel ──────────────────────────────────────
+
+  public editOpdEntry(index: number): void {
+    this.opdRegister[index].editing = true;
+  }
+
+  public saveOpdEntry(index: number): void {
+    const entry = this.opdRegister[index];
+    if (!entry.id) return;
+
+    entry.saving = true;
+    this.errorMessage = '';
+
+    const body: any = {
+      chief_complaint: entry.complaint,
+      diagnosis:       entry.diagnosis,
+      treatment_plan:  entry.treatment,
+      vitals: {
+        weight:        entry.weight,
+        height:        entry.height,
+        malariaTest:   entry.malariaTest,
+        tbScreen:      entry.tbScreen,
+        palliativeCare: entry.palliativeCare,
+        alcoholUse:    entry.alcoholUse,
+        referredFrom:  entry.referredFrom,
+      },
+      notes: entry.notes,
+    };
+
+    this.http.patch<any>(`${API}/opd/${entry.id}`, body)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (res) => {
+          this.opdRegister[index] = { ...this.mapVisitToEntry(res.data), editing: false, saving: false };
+          this.showSuccess('Entry updated.');
+        },
+        error: (err) => {
+          entry.saving = false;
+          this.errorMessage = err?.error?.message ?? 'Failed to save changes.';
+        },
+      });
+  }
+
+  public cancelOpdEdit(index: number): void {
+    this.opdRegister[index].editing = false;
+    // Re-fetch the original from the API to discard local changes
+    const id = this.opdRegister[index].id;
+    if (!id) return;
+
+    this.http.get<any>(`${API}/opd/${id}`)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (res) => {
+          this.opdRegister[index] = this.mapVisitToEntry(res.data);
+        },
+      });
+  }
+
+  // ─── Delete ────────────────────────────────────────────────────
+
+  public deleteOpdEntry(index: number): void {
+    const entry = this.opdRegister[index];
+    if (!entry.id) return;
+
+    // Optimistic: remove immediately, rollback on error
+    const removed = this.opdRegister.splice(index, 1)[0];
+
+    this.http.patch<any>(`${API}/opd/${entry.id}`, { status: 'completed' })
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        error: () => {
+          this.opdRegister.splice(index, 0, removed);
+          this.errorMessage = 'Failed to delete entry.';
+        },
+      });
+  }
+
+  public deleteSelectedRows(): void {
+    const indices = Array.from(this.selectedRows).sort((a, b) => b - a);
+    const removed: Array<{ index: number; entry: OPDRegisterEntry }> = [];
+
+    indices.forEach(i => {
+      removed.push({ index: i, entry: this.opdRegister[i] });
+      this.opdRegister.splice(i, 1);
+    });
+    this.selectedRows.clear();
+
+    // Fire PATCH for each (mark as completed / soft-delete)
+    removed.forEach(({ entry }) => {
+      if (!entry.id) return;
+      this.http.patch<any>(`${API}/opd/${entry.id}`, { status: 'completed' })
+        .pipe(takeUntil(this.destroy$))
+        .subscribe({ error: () => console.error(`Failed to delete visit ${entry.id}`) });
+    });
+  }
+
+  // ─── Row selection ─────────────────────────────────────────────
+
+  public toggleRowSelection(index: number): void {
+    if (this.selectedRows.has(index)) {
+      this.selectedRows.delete(index);
+    } else {
+      this.selectedRows.add(index);
+    }
+  }
+
+  // ─── Filtering ─────────────────────────────────────────────────
+
+  public get filteredOpdRegister(): OPDRegisterEntry[] {
+    return this.opdRegister.filter(entry => {
+      const matchesDate       = !this.filterDate       || entry.date.includes(this.filterDate);
+      const matchesDoctor     = !this.filterDoctor     || entry.doctor === this.filterDoctor;
+      const matchesDepartment = !this.filterDepartment || entry.department === this.filterDepartment;
+      const matchesMalaria    = !this.filterMalariaTest || entry.malariaTest === this.filterMalariaTest;
+      const matchesName       = !this.filterPatientName
+        || entry.patientName.toLowerCase().includes(this.filterPatientName.toLowerCase());
+      const matchesDiagnosis  = !this.filterDiagnosis
+        || (entry.diagnosis ?? '').toLowerCase().includes(this.filterDiagnosis.toLowerCase());
+      return matchesDate && matchesDoctor && matchesDepartment && matchesMalaria && matchesName && matchesDiagnosis;
+    });
+  }
+
+  // ─── Pagination ────────────────────────────────────────────────
+
+  public get paginatedEntries(): OPDRegisterEntry[] {
+    const start = (this.currentPage - 1) * this.pageSize;
+    return this.filteredOpdRegister.slice(start, start + this.pageSize);
+  }
+
+  public get totalPages(): number {
+    return Math.max(1, Math.ceil(this.filteredOpdRegister.length / this.pageSize));
+  }
+
+  public goToPage(page: number): void {
+    if (page >= 1 && page <= this.totalPages) {
+      this.currentPage = page;
+    }
+  }
+
+  public changePageSize(): void {
+    this.currentPage = 1;
+  }
+
+  public trackByIndex(index: number): number {
+    return index;
+  }
+
+  // ─── Doctor selection helper ───────────────────────────────────
+
+  public onDoctorChange(username: string, target: OPDRegisterEntry): void {
+    const found = this.doctors.find(d => d.username === username);
+    target.doctor   = username;
+    target.doctorId = found?.id ?? '';
+  }
+
+  // ─── Export ────────────────────────────────────────────────────
+
+  public exportToCsv(): void {
     const headers = [
       'OPD No', 'Reg No', 'Date', 'Patient Name', 'Age', 'Sex', 'Client Category', 'Contact', 'Address',
       'Complaint', 'Diagnosis', 'Treatment', 'Department', 'Doctor', 'Malaria Test', 'TB Screen',
-      'Palliative Care', 'Alcohol Use', 'Referred From', 'Notes'
+      'Palliative Care', 'Alcohol Use', 'Referred From', 'Notes',
     ];
-    const rows = this.filteredOpdRegister.map(entry => [
-      entry.opdNo, entry.regNo, entry.date, entry.patientName, entry.age, entry.sex, entry.clientCategory,
-      entry.contact, entry.address, entry.complaint, entry.diagnosis, entry.treatment, entry.department,
-      entry.doctor, entry.malariaTest, entry.tbScreen, entry.palliativeCare, entry.alcoholUse,
-      entry.referredFrom, entry.notes
+    const rows = this.filteredOpdRegister.map(e => [
+      e.opdNo, e.regNo, e.date, e.patientName, e.age, e.sex, e.clientCategory,
+      e.contact, e.address, e.complaint, e.diagnosis, e.treatment, e.department,
+      e.doctor, e.malariaTest, e.tbScreen, e.palliativeCare, e.alcoholUse,
+      e.referredFrom, e.notes,
     ]);
-    const csvContent = [headers, ...rows].map(row => row.map(field => `"${field}"`).join(',')).join('\n');
-    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const csv = [headers, ...rows].map(r => r.map(f => `"${f ?? ''}"`).join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -213,105 +449,25 @@ export class OPDRegister implements OnInit {
     window.URL.revokeObjectURL(url);
   }
 
-  public addOpdEntry() {
-    if (!this.newOpdEntry.date || !this.newOpdEntry.patientName || !this.newOpdEntry.age || !this.newOpdEntry.sex || !this.newOpdEntry.doctor) {
-      alert('Required fields: Date, Patient Name, Age, Sex,, Doctor.');
-      return;
-    }
+  // ─── Helpers ───────────────────────────────────────────────────
 
-    const nextReg = `REG-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${this.opdRegister.length + 1}`;
-    this.newOpdEntry.regNo = this.newOpdEntry.regNo?.trim() ? this.newOpdEntry.regNo : nextReg;
-
-    const entry = { ...this.newOpdEntry };
-    if (!entry.opdNo) {
-      entry.opdNo = `OPD-${Date.now()}`;
-    }
-
-    this.opdRegister = [entry, ...this.opdRegister];
-    this.saveOpdRegister();
-
-    this.newOpdEntry = {
-      opdNo: '',
-      regNo: '',
+  private blankEntry(): OPDRegisterEntry {
+    return {
+      opdNo: '', regNo: '',
       date: new Date().toISOString().slice(0, 10),
-      patientName: '',
-      age: 0,
-      sex: 'Female',
-      clientCategory: 'General',
-      contact: '',
-      address: '',
-      weight: '',
-      height: '',
-      complaint: '',
-      diagnosis: '',
-      treatment: '',
-      department: '',
-      doctor: this.doctors.length > 0 ? this.doctors[0] : '',
-      malariaTest: 'Not done',
-      tbScreen: 'No',
-      palliativeCare: 'No',
-      alcoholUse: 'No',
-      referredFrom: '',
-      notes: '',
+      patientName: '', age: 0,
+      sex: 'Female', clientCategory: 'General',
+      contact: '', address: '', weight: '', height: '',
+      complaint: '', diagnosis: '', treatment: '',
+      department: '', doctor: '', doctorId: '',
+      malariaTest: 'Not done', tbScreen: 'No',
+      palliativeCare: 'No', alcoholUse: 'No',
+      referredFrom: '', notes: '',
     };
   }
 
-  public editOpdEntry(index: number) {
-    this.opdRegister[index].editing = true;
-  }
-
-  public saveOpdEntry(index: number) {
-    this.opdRegister[index].editing = false;
-    this.saveOpdRegister();
-  }
-
-  public cancelOpdEdit(index: number) {
-    this.opdRegister[index].editing = false;
-    this.loadOpdRegister();
-  }
-
-  public deleteOpdEntry(index: number) {
-    this.opdRegister.splice(index, 1);
-    this.saveOpdRegister();
-  }
-
-  public toggleRowSelection(index: number) {
-    if (this.selectedRows.has(index)) {
-      this.selectedRows.delete(index);
-    } else {
-      this.selectedRows.add(index);
-    }
-  }
-
-  public deleteSelectedRows() {
-    const indicesToDelete = Array.from(this.selectedRows).sort((a, b) => b - a);
-    indicesToDelete.forEach(index => {
-      this.opdRegister.splice(index, 1);
-    });
-    this.selectedRows.clear();
-    this.saveOpdRegister();
-  }
-
-  public get paginatedEntries() {
-    const startIndex = (this.currentPage - 1) * this.pageSize;
-    return this.filteredOpdRegister.slice(startIndex, startIndex + this.pageSize);
-  }
-
-  public get totalPages() {
-    return Math.ceil(this.filteredOpdRegister.length / this.pageSize);
-  }
-
-  public goToPage(page: number) {
-    if (page >= 1 && page <= this.totalPages) {
-      this.currentPage = page;
-    }
-  }
-
-  public changePageSize() {
-    this.currentPage = 1;
-  }
-
-  public trackByIndex(index: number): number {
-    return index;
+  private showSuccess(msg: string): void {
+    this.successMessage = msg;
+    setTimeout(() => { this.successMessage = ''; }, 3000);
   }
 }
